@@ -1,0 +1,26 @@
+{
+  "name": "watch-me-type",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server/server.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SanderRonde/WatchMeType.git"
+  },
+  "keywords": [
+    "watch",
+    "type",
+    "smartwatch",
+    "smart",
+    "typings"
+  ],
+  "author": "Sander Ronde <awsdfgvhbjn@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SanderRonde/WatchMeType/issues"
+  },
+  "homepage": "https://github.com/SanderRonde/WatchMeType#readme"
+}
