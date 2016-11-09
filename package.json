@@ -22,5 +22,15 @@
   "bugs": {
     "url": "https://github.com/SanderRonde/WatchMeType/issues"
   },
-  "homepage": "https://github.com/SanderRonde/WatchMeType#readme"
+  "homepage": "https://github.com/SanderRonde/WatchMeType#readme",
+  "devDependencies": {
+    "tsd": "^0.6.5"
+  },
+  "dependencies": {
+    "express": "^4.14.0",
+    "finalhandler": "^0.5.0",
+    "http": "0.0.0",
+    "path": "^0.12.7",
+    "router": "^1.1.4"
+  }
 }
