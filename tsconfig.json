@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+		"target": "es5"
+    },
+    "files": [
+        "server/server.ts",
+		"app/app.ts"
+    ]
+}
