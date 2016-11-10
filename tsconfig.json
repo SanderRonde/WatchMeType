@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+		"jsx": "react",
         "module": "commonjs",
         "removeComments": true,
         "preserveConstEnums": true,
@@ -8,6 +9,7 @@
     },
     "files": [
         "server/server.ts",
-		"app/app.ts"
+		"app/js/index.tsx",
+		"app/js/components.tsx"
     ]
 }

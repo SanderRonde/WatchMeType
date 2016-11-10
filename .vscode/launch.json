@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "launch",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/server/server.ts",
+            "stopOnEntry": false,
+            "args": [],
+            "cwd": "${workspaceRoot}/server",
+            "runtimeExecutable": null,
+            "runtimeArgs": [],
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "sourceMaps": true,
+            "outDir": null
+        }
+    ]
+}

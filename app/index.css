@@ -1,0 +1,56 @@
+html, body {
+	margin: 0;
+	border: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+#mainContainer {
+	width: 100vw;
+	height: 100vh;
+	background-color: rgb(40,40,40);
+	overflow: hidden;
+	color: #2196F3;
+	font-size: 2em;
+	font-family: 'Roboto';
+	pointer-events: none;
+}
+
+#faceCenter {
+	width: 100vw;
+	height: 100vh;
+	pointer-events: none;
+}
+
+#faceCenter > .horizontalCenterer {
+	height: 100%;
+}
+
+.horizontalCenterer {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+}
+
+.verticalCenterer {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.centered {
+	/* height: 0; */
+}
+
+#faceSlices {
+	position: absolute;
+}
+
+.slice {
+	position: absolute;
+	width: 45vh;
+	transform-origin: left;
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+}
