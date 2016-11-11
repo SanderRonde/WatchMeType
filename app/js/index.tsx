@@ -155,3 +155,10 @@ if (DEBUG) {
 	}
 }
 
+const websocket = new WebSocket('ws://localhost:1234');
+websocket.onmessage = (event) => {
+	const data: WSData = event.data;
+
+	pointer.x = data.x;
+	pointer.y = data.y;
+}

@@ -11,7 +11,7 @@ html, body {
 	background-color: rgb(40,40,40);
 	overflow: hidden;
 	color: white;
-	font-size: 2em;
+	font-size: 3.4vmin;
 	font-family: 'Roboto';
 	pointer-events: none;
 }
@@ -57,11 +57,11 @@ html, body {
 	overflow: visible;
 	background-image: url(resources/glow.png);
 	position: absolute;
-	width: 111px;
-	height: 100px;
+	width: 12vmin;
+	height: 10.8vmin;
 	background-size: cover;
-	margin-top: -27px;
-	margin-left: -51px;
+	margin-top: -2.9vmin;
+	margin-left: -5.5vmin;
 	opacity: 0;
 	transition: opacity 100ms ease-in-out;
 }

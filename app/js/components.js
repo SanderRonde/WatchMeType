@@ -39,7 +39,7 @@ var Symbol = (function (_super) {
         props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
             switch (type) {
                 case 0:
-                    if (data !== _this.opacity) {
+                    if (data < 0 || data !== _this.opacity) {
                         _this.glow.style.opacity = String(data);
                         _this.opacity = data;
                     }

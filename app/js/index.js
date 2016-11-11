@@ -124,4 +124,10 @@ if (DEBUG) {
         pointer.y = e.clientY;
     };
 }
+var websocket = new WebSocket('ws://localhost:1234');
+websocket.onmessage = function (event) {
+    var data = event.data;
+    pointer.x = data.x;
+    pointer.y = data.y;
+};
 //# sourceMappingURL=index.js.map

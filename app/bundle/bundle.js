@@ -222,7 +222,7 @@ var Symbol = (function (_super) {
         props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
             switch (type) {
                 case 0:
-                    if (data !== _this.opacity) {
+                    if (data < 0 || data !== _this.opacity) {
                         _this.glow.style.opacity = String(data);
                         _this.opacity = data;
                     }
@@ -508,6 +508,12 @@ if (DEBUG) {
         pointer.y = e.clientY;
     };
 }
+var websocket = new WebSocket('ws://localhost:1234');
+websocket.onmessage = function (event) {
+    var data = event.data;
+    pointer.x = data.x;
+    pointer.y = data.y;
+};
 
 },{"./components":2,"react":173,"react-dom":29}],4:[function(require,module,exports){
 (function (process){

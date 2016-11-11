@@ -65,3 +65,8 @@ interface CommHandlers {
 
 	sendMessageToController(type: ControllerCommType, data: string): void;
 }
+
+interface WSData {
+	x: number;
+	y: number;
+}

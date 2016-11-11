@@ -72,7 +72,7 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 		props.comm.addSymbolListener(this.props.data.angle + 90, this, (type, data) => {
 			switch (type) {
 				case SymbolCommType.intensityUpdate:
-					if (data !== this.opacity) {
+					if (data < 0 || data !== this.opacity) {
 						this.glow.style.opacity = String(data);
 						this.opacity = data as number;
 					}
