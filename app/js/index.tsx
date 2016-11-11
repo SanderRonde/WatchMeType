@@ -83,7 +83,7 @@ const comm: CommHandlers = {
 			0.45;
 		const radius = radiusFromCenter(pos);
 
-		if (radius >= symbolRadius * (GLOW_START_RADIUS_PERCENTAGE / 100) {
+		if (radius >= symbolRadius * (GLOW_START_RADIUS_PERCENTAGE / 100)) {
 			const maxGlowIntensity = getGlowIntensity(symbolRadius, radius);
 
 			comm._symbolListeners.filter((listenerData) => {
