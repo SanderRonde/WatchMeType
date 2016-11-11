@@ -1,0 +1,15 @@
+{
+  "name": "watch-me-type",
+  "globalDependencies": {
+    "es6-promise": "github:DefinitelyTyped/DefinitelyTyped/es6-promise/es6-promise.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "express": "github:DefinitelyTyped/DefinitelyTyped/express/express.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "express-serve-static-core": "github:DefinitelyTyped/DefinitelyTyped/express-serve-static-core/express-serve-static-core.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "mime": "github:DefinitelyTyped/DefinitelyTyped/mime/mime.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "node": "github:DefinitelyTyped/DefinitelyTyped/node/node.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "react": "github:DefinitelyTyped/DefinitelyTyped/react/react.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "react-dom": "github:DefinitelyTyped/DefinitelyTyped/react/react-dom.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "serve-static": "github:DefinitelyTyped/DefinitelyTyped/serve-static/serve-static.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "websocket": "github:DefinitelyTyped/DefinitelyTyped/websocket/websocket.d.ts#3abf7a7bd48328caa63a30c0b26467f8c17bff12",
+    "whatwg-fetch": "registry:dt/whatwg-fetch#0.0.0+20161004182750"
+  }
+}

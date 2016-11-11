@@ -2,12 +2,21 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
 var components = require('./components');
-var DEBUG = window.location.hash === '#d';
+var t9 = require('./t9.js');
+var hashSplit = window.location.hash.slice(1).split('-');
+var DEBUG = hashSplit.indexOf('d') > -1;
+var USET9 = hashSplit.indexOf('t9') > -1;
+var LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
+if (DEBUG) {
+    console.log("Using debug mode");
+}
+console.log(DEBUG, USET9);
 var GLOW_ANGLE = 22.5;
 var GLOW_START_RADIUS_PERCENTAGE = 50;
 var GLOW_ANGLE_FACTOR = 1.1;
 var KEY_PRESSED_MIN_DISTANCE = 90;
 var KEY_PRESSED_MAX_ANGLE_DIFF = 10;
+var isLoading = true;
 var cursorReset = true;
 var pointer = {
     x: window.innerWidth / 2,
@@ -67,20 +76,42 @@ var comm = {
         var radius = radiusFromCenter(pos);
         if (radius >= symbolRadius * (GLOW_START_RADIUS_PERCENTAGE / 100)) {
             var maxGlowIntensity_1 = getGlowIntensity(symbolRadius, radius);
-            comm._symbolListeners.filter(function (listenerData) {
-                if (shouldFireListener(gestureAngle, listenerData.angle)) {
-                    return true;
-                }
-                listenerData.listener(0, 0);
-            }).forEach(function (listenerData) {
-                var angleDifference = getAngleDifference(gestureAngle, listenerData.angle);
-                listenerData.listener(0, getAngleGlowIntensity(maxGlowIntensity_1, angleDifference) / 100);
-                if (keyPressed(maxGlowIntensity_1, angleDifference)) {
+            if (USET9) {
+                gestureAngle += (360 / 26);
+                if (maxGlowIntensity_1 >= KEY_PRESSED_MIN_DISTANCE * 0.8 && cursorReset) {
+                    var toggledIndex = comm._symbolListeners.length - 1;
+                    var lastSlice = 0;
+                    for (var i = 0; i < comm._symbolListeners.length; i++) {
+                        if (comm._symbolListeners[i].element.elName === 'T9Slice') {
+                            if (gestureAngle < comm._symbolListeners[i].angle) {
+                                toggledIndex = lastSlice;
+                                break;
+                            }
+                            lastSlice = i;
+                        }
+                    }
+                    comm._symbolListeners[toggledIndex].listener(1);
                     cursorReset = false;
-                    listenerData.listener(1);
-                    comm.fireMainFaceListener(0, listenerData.element.symbol);
+                    comm.fireMainFaceListener(2, comm._symbolListeners[toggledIndex].element
+                        .props.data.index + 1);
                 }
-            });
+            }
+            else {
+                comm._symbolListeners.filter(function (listenerData) {
+                    if (shouldFireListener(gestureAngle, listenerData.angle)) {
+                        return true;
+                    }
+                    listenerData.listener(0, 0);
+                }).forEach(function (listenerData) {
+                    var angleDifference = getAngleDifference(gestureAngle, listenerData.angle);
+                    listenerData.listener(0, getAngleGlowIntensity(maxGlowIntensity_1, angleDifference) / 100);
+                    if (keyPressed(maxGlowIntensity_1, angleDifference)) {
+                        cursorReset = false;
+                        listenerData.listener(1);
+                        comm.fireMainFaceListener(0, listenerData.element.symbol.value);
+                    }
+                });
+            }
         }
         else {
             cursorReset = true;
@@ -107,7 +138,9 @@ var comm = {
     }
 };
 ReactDOM.render(React.createElement(components.MainFace, {
-    comm: comm
+    comm: comm,
+    useT9: USET9,
+    t9Lib: t9
 }), document.getElementById('mainContainer'));
 function updatePointerPos() {
     if (lastPointerPos.x !== pointer.x || lastPointerPos.y !== pointer.y) {
@@ -117,7 +150,6 @@ function updatePointerPos() {
     }
     window.requestAnimationFrame(updatePointerPos);
 }
-window.requestAnimationFrame(updatePointerPos);
 if (DEBUG) {
     window.onmousemove = function (e) {
         pointer.x = e.clientX;
@@ -130,4 +162,18 @@ websocket.onmessage = function (event) {
     pointer.x = data.x;
     pointer.y = data.y;
 };
+function finishLoading() {
+    document.getElementById('spinnerOverlay').style.opacity = '0';
+    window.setTimeout(function () {
+        document.getElementById('spinnerOverlay').style.display = 'none';
+        isLoading = false;
+        window.requestAnimationFrame(updatePointerPos);
+    }, 500);
+}
+fetch("/resources/" + LANG + ".txt").then(function (res) {
+    return res.text();
+}).then(function (text) {
+    t9.init(text);
+    finishLoading();
+});
 //# sourceMappingURL=index.js.map

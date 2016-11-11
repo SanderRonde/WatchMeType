@@ -1,7 +1,25 @@
-///<reference path="../../typings/tsd.d.ts"/>
+///<reference path="../../typings/index.d.ts"/>
+
+interface T9Defs {
+	dictionary: string;
+	dictionaryTree: any;
+	words: Array<string>;
+	keyMap: {
+		[key: number]: string;
+	};
+
+	init(dictionary: string): void;
+	predict(numericInput: number|string): Array<string>;
+	findWords(sequence: number, tree: any, exact: boolean, 
+		words: Array<string>, currentWord: string, depth: number): Array<string>;
+}
 
 interface SymbolElement {
-	symbol: string;
+	symbol: {
+		isIcon: boolean;
+		symbol: string;
+		value: string;
+	};
 	glow: HTMLElement;
 	opacity: number;
 	symbolCont: HTMLElement;
@@ -13,6 +31,31 @@ interface SymbolElement {
 			index: number;
 		}
 	}
+	elName: 'Symbol';
+
+	constructor: Function;
+	render(): JSX.Element;
+}
+
+interface SliceElement {
+	child: SymbolElement;
+
+	constructor: Function;
+	render(): JSX.Element;
+}
+
+interface T9SliceElement {
+	props: {
+		comm: CommHandlers;
+		data: {
+			index: number;
+			angle: number;
+		}
+	};
+	centerSliceBackground: SVGElement;
+	colorTimeout: number;
+	children: Array<SliceElement>;
+	elName: 'T9Slice';
 
 	constructor: Function;
 	render(): JSX.Element;
@@ -21,7 +64,7 @@ interface SymbolElement {
 declare const enum SymbolCommType {
 	intensityUpdate = 0,
 	fired = 1,
-	updateCase = 2
+	updateTextType = 2
 }
 
 declare const enum Gesture {
@@ -31,7 +74,8 @@ declare const enum Gesture {
 
 declare const enum MainFaceCommType {
 	keyPressed = 0,
-	gesture = 1
+	gesture = 1,
+	T9KeyPressed = 2
 } 
 
 declare const enum ControllerCommType {
@@ -43,11 +87,11 @@ interface PointerPosition {
 	y: number;
 }
 
-type PosListener = (type: SymbolCommType, data?: number|boolean) => void;
+type PosListener = (type: SymbolCommType, data?: number|[boolean, boolean]) => void;
 
 interface PosListenerData {
 	angle: number;
-	element: SymbolElement;
+	element: SymbolElement|T9SliceElement;
 	listener: PosListener;
 }
 
@@ -55,13 +99,14 @@ type MainFaceListener = (type: MainFaceCommType, data: string|Gesture) => void;
 
 interface CommHandlers {
 	_symbolListeners: Array<PosListenerData>;
-	addSymbolListener(angle: number, symbol: SymbolElement,
+	addSymbolListener(angle: number, element: SymbolElement|T9SliceElement,
 		listener: PosListener): void;
 	fireSymbolListeners(pos: PointerPosition): void;
 
 	_faceListeners: Array<MainFaceListener>;
 	addMainFaceListener(listener: MainFaceListener): void;
-	fireMainFaceListener(type: MainFaceCommType, data: Gesture|string): void;
+	fireMainFaceListener(type: MainFaceCommType,
+		data: Gesture|string|number): void;
 
 	sendMessageToController(type: ControllerCommType, data: string): void;
 }

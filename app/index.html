@@ -1,10 +1,22 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<link rel="stylesheet" href="index.css" />
+		<link rel="stylesheet" href="css/material-font.css" />
+		<link rel="stylesheet" href="css/index.css" />
 		<title>WatchMeType</title>
 	</head>
 	<body>
+		<div id="spinnerOverlay">
+			<div class="horizontalCenterer">
+				<div class="verticalCenterer">
+					<div class="centered">
+						<div id="loadingSpinner" class="spinner is-active" data-options="multicolor large"
+							role="progressbar" aria-valuetext="Loading…"></div>
+						<div id="loadingText">Loading...</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<div id="mainContainer"></div>
 		<script src="bundle/bundle.js"></script>
 	</body>

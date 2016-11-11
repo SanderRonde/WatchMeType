@@ -1,17 +1,27 @@
-/// <reference path="../../typings/tsd.d.ts" />
+/// <reference path="../../typings/index.d.ts" />
 /// <reference path="./defs.d.ts" />
 
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as components from './components';
+const t9: T9Defs = require('./t9.js');
 
-const DEBUG = window.location.hash === '#d';
+const hashSplit = window.location.hash.slice(1).split('-');
+const DEBUG = hashSplit.indexOf('d') > -1;
+const USET9 = hashSplit.indexOf('t9') > -1;
+const LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
+if (DEBUG) {
+	console.log(`Using debug mode`);
+}
+
+console.log(DEBUG, USET9);
 const GLOW_ANGLE = 22.5;
 const GLOW_START_RADIUS_PERCENTAGE = 50;
 const GLOW_ANGLE_FACTOR = 1.1;
 const KEY_PRESSED_MIN_DISTANCE = 90;
 const KEY_PRESSED_MAX_ANGLE_DIFF = 10;
 
+let isLoading = true;
 let cursorReset = true;
 
 const pointer: PointerPosition = {
@@ -86,26 +96,51 @@ const comm: CommHandlers = {
 		if (radius >= symbolRadius * (GLOW_START_RADIUS_PERCENTAGE / 100)) {
 			const maxGlowIntensity = getGlowIntensity(symbolRadius, radius);
 
-			comm._symbolListeners.filter((listenerData) => {
-				if (shouldFireListener(gestureAngle, listenerData.angle)) {
-					return true;
-				}
-				listenerData.listener(SymbolCommType.intensityUpdate, 0);
-			}).forEach((listenerData) => {
-				const angleDifference = getAngleDifference(gestureAngle,
-					listenerData.angle);
-				listenerData.listener(SymbolCommType.intensityUpdate,
-					getAngleGlowIntensity(maxGlowIntensity, 
-						angleDifference) / 100);
+			if (USET9) {
+				gestureAngle += (360 / 26);
+				if (maxGlowIntensity >= KEY_PRESSED_MIN_DISTANCE * 0.8 && cursorReset) {
+					//Some area was toggled, find out which one
+					let toggledIndex = comm._symbolListeners.length - 1;
+					let lastSlice = 0;
+					for (let i = 0; i < comm._symbolListeners.length; i++) {
+						if (comm._symbolListeners[i].element.elName === 'T9Slice') {
+							if (gestureAngle < comm._symbolListeners[i].angle) {
+								toggledIndex = lastSlice;
+								break;
+							}
+							lastSlice = i;
+						}
+					}
 
-				if (keyPressed(maxGlowIntensity, angleDifference)) {
+					comm._symbolListeners[toggledIndex].listener(SymbolCommType.fired);
 					cursorReset = false;
 
-					listenerData.listener(SymbolCommType.fired);
-					comm.fireMainFaceListener(MainFaceCommType.keyPressed, 
-						listenerData.element.symbol);
+					comm.fireMainFaceListener(MainFaceCommType.T9KeyPressed, 
+						(comm._symbolListeners[toggledIndex].element as T9SliceElement)
+							.props.data.index + 1);
 				}
-			});
+			} else {
+				comm._symbolListeners.filter((listenerData) => {
+					if (shouldFireListener(gestureAngle, listenerData.angle)) {
+						return true;
+					}
+					listenerData.listener(SymbolCommType.intensityUpdate, 0);
+				}).forEach((listenerData) => {
+					const angleDifference = getAngleDifference(gestureAngle,
+						listenerData.angle);
+					listenerData.listener(SymbolCommType.intensityUpdate,
+						getAngleGlowIntensity(maxGlowIntensity, 
+							angleDifference) / 100);
+
+					if (keyPressed(maxGlowIntensity, angleDifference)) {
+						cursorReset = false;
+
+						listenerData.listener(SymbolCommType.fired);
+						comm.fireMainFaceListener(MainFaceCommType.keyPressed, 
+							(listenerData.element as SymbolElement).symbol.value);
+					}
+				});
+			}
 		} else {
 			cursorReset = true;
 
@@ -134,7 +169,9 @@ const comm: CommHandlers = {
 	}
 };
 ReactDOM.render(React.createElement(components.MainFace, {
-	comm: comm
+	comm: comm,
+	useT9: USET9,
+	t9Lib: t9
 }), document.getElementById('mainContainer'));
 
 
@@ -146,7 +183,6 @@ function updatePointerPos() {
 	}
 	window.requestAnimationFrame(updatePointerPos);
 }
-window.requestAnimationFrame(updatePointerPos);
 
 if (DEBUG) {
 	window.onmousemove = (e) => {
@@ -162,3 +198,19 @@ websocket.onmessage = (event) => {
 	pointer.x = data.x;
 	pointer.y = data.y;
 }
+
+function finishLoading() {
+	document.getElementById('spinnerOverlay').style.opacity = '0';
+	window.setTimeout(() => {
+		document.getElementById('spinnerOverlay').style.display = 'none';
+		isLoading = false;
+		window.requestAnimationFrame(updatePointerPos);
+	}, 500);
+}
+
+fetch(`/resources/${LANG}.txt`).then((res) => {
+	return res.text();
+}).then((text) => {
+	t9.init(text);
+	finishLoading();
+});

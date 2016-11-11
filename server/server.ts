@@ -1,4 +1,4 @@
-/// <reference path="../typings/tsd.d.ts" />
+/// <reference path="../typings/index.d.ts" />
 /// <reference path="libs/leapmotion.d.ts" />
 
 import * as fs from 'fs';
