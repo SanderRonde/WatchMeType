@@ -6,7 +6,9 @@ import * as ReactDOM from 'react-dom';
 import * as components from './components';
 const t9: T9Defs = require('./t9.js');
 
-const hashSplit = window.location.hash.slice(1).split('-');
+const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
+	return option.toLowerCase();
+});
 const DEBUG = hashSplit.indexOf('d') > -1;
 const USET9 = hashSplit.indexOf('t9') > -1;
 const LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';

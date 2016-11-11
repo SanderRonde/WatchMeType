@@ -3,7 +3,9 @@ var React = require('react');
 var ReactDOM = require('react-dom');
 var components = require('./components');
 var t9 = require('./t9.js');
-var hashSplit = window.location.hash.slice(1).split('-');
+var hashSplit = window.location.hash.slice(1).split('-').map(function (option) {
+    return option.toLowerCase();
+});
 var DEBUG = hashSplit.indexOf('d') > -1;
 var USET9 = hashSplit.indexOf('t9') > -1;
 var LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
