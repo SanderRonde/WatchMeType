@@ -1,4 +1,5 @@
 ///<reference path="../../typings/index.d.ts"/>
+///<reference path="../../server/libs/leapmotion.d.ts" />
 
 interface T9Defs {
 	dictionary: string;
@@ -12,6 +13,24 @@ interface T9Defs {
 	predict(numericInput: number|string): Array<string>;
 	findWords(sequence: number, tree: any, exact: boolean, 
 		words: Array<string>, currentWord: string, depth: number): Array<string>;
+}
+
+interface ScreenPosition {
+	screenPosition(options?: {
+		positioning: string;
+		scale: number;
+		scaleX: number;
+		scaleY: number;
+		scaleZ: number;
+		verticalOffset: number;
+	}): {
+		hand: {
+			screenPosition(position: VectorArr): VectorArr;
+		};
+		pointable: {
+			screenPosition(position: VectorArr): VectorArr;
+		}
+	}
 }
 
 interface SymbolElement {
@@ -68,8 +87,9 @@ declare const enum SymbolCommType {
 }
 
 declare const enum Gesture {
-	clear = 0,
-	space = 1
+	none = 0,
+	clear = 1,
+	space = 2
 }
 
 declare const enum MainFaceCommType {
@@ -109,9 +129,4 @@ interface CommHandlers {
 		data: Gesture|string|number): void;
 
 	sendMessageToController(type: ControllerCommType, data: string): void;
-}
-
-interface WSData {
-	x: number;
-	y: number;
 }

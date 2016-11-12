@@ -208,6 +208,8 @@ html, body {
 
 /* Spinner rotation */
 @-webkit-keyframes spin { to { -webkit-transform: rotate(1080deg); transform: rotate(1080deg) } }
+@-moz-keyframes spin { to { -moz-transform: rotate(1080deg); transform: rotate(1080deg) } }
+@-o-keyframes spin { to { -o-transform: rotate(1080deg); transform: rotate(1080deg) } }
 @keyframes spin { to { -webkit-transform: rotate(1080deg); transform: rotate(1080deg) } }
 
 .spinner {
@@ -220,6 +222,8 @@ html, body {
     box-shadow: inset 0 0 0 .1875em;
     will-change: transform;
     -webkit-animation: spin 2666ms linear infinite;
+	-moz-animation: spin 2666ms linear infinite;
+	-o-animation: spin 2666ms linear infinite;
     animation: spin 2666ms linear infinite;
     -webkit-clip-path: circle(.875em at center);
     clip-path: circle(.875em at center);
@@ -240,6 +244,46 @@ html, body {
 
 /* Multicolor */
 @-webkit-keyframes color-shift {
+    /* Blue */
+    from { box-shadow: inset 0 0 0 .1875em #4285f4 }
+    22% { box-shadow: inset 0 0 0 .1875em #4285f4 }
+
+    /* Red */
+    23% { box-shadow: inset 0 0 0 .1875em #db4437 }
+    48% { box-shadow: inset 0 0 0 .1875em #db4437 }
+
+    /* Yellow */
+    49% { box-shadow: inset 0 0 0 .1875em #f4b400 }
+    73% { box-shadow: inset 0 0 0 .1875em #f4b400 }
+
+    /* Green */
+    74% { box-shadow: inset 0 0 0 .1875em #0f9d58 }
+    98% { box-shadow: inset 0 0 0 .1875em #0f9d58 }
+
+    /* Back to blue */
+    to { box-shadow: inset 0 0 0 .1875em #4285f4 }
+}
+@-moz-keyframes color-shift {
+    /* Blue */
+    from { box-shadow: inset 0 0 0 .1875em #4285f4 }
+    22% { box-shadow: inset 0 0 0 .1875em #4285f4 }
+
+    /* Red */
+    23% { box-shadow: inset 0 0 0 .1875em #db4437 }
+    48% { box-shadow: inset 0 0 0 .1875em #db4437 }
+
+    /* Yellow */
+    49% { box-shadow: inset 0 0 0 .1875em #f4b400 }
+    73% { box-shadow: inset 0 0 0 .1875em #f4b400 }
+
+    /* Green */
+    74% { box-shadow: inset 0 0 0 .1875em #0f9d58 }
+    98% { box-shadow: inset 0 0 0 .1875em #0f9d58 }
+
+    /* Back to blue */
+    to { box-shadow: inset 0 0 0 .1875em #4285f4 }
+}
+@-o-keyframes color-shift {
     /* Blue */
     from { box-shadow: inset 0 0 0 .1875em #4285f4 }
     22% { box-shadow: inset 0 0 0 .1875em #4285f4 }
@@ -283,10 +327,17 @@ html, body {
 /* Forced to duplicate `spin` keyframes for multicolor spinner.
  * Otherwise, spinner continues to rotate without resetting to account for color changes */
 @-webkit-keyframes multicolor-spin { to { -webkit-transform: rotate(1080deg); transform: rotate(1080deg) } }
+@-moz-keyframes multicolor-spin { to { -moz-transform: rotate(1080deg); transform: rotate(1080deg) } }
+@-o-keyframes multicolor-spin { to { -o-transform: rotate(1080deg); transform: rotate(1080deg) } }
 @keyframes multicolor-spin { to { -webkit-transform: rotate(1080deg); transform: rotate(1080deg) } }
 
 .spinner[data-options*="multicolor"] { will-change: transform, box-shadow }
-.spinner[data-options*="multicolor"].is-active { -webkit-animation: multicolor-spin 2666ms linear infinite, color-shift 8531.2ms infinite linear; animation: multicolor-spin 2666ms linear infinite, color-shift 8531.2ms infinite linear }
+.spinner[data-options*="multicolor"].is-active { 
+	-webkit-animation: multicolor-spin 2666ms linear infinite, color-shift 8531.2ms infinite linear;
+	-moz-animation: multicolor-spin 2666ms linear infinite, color-shift 8531.2ms infinite linear;
+	-o-animation: multicolor-spin 2666ms linear infinite, color-shift 8531.2ms infinite linear;
+	animation: multicolor-spin 2666ms linear infinite, color-shift 8531.2ms infinite linear
+}
 
 .spinner::before,
 .spinner::after {
@@ -298,27 +349,37 @@ html, body {
 }
 
 @-webkit-keyframes shape-shift-before { to { -webkit-transform: skewX(-45deg) translate(.875em, -.875em); transform: skewX(-45deg) translate(.875em, -.875em) } }
-
+@-moz-keyframes shape-shift-before { to { -moz-transform: skewX(-45deg) translate(.875em, -.875em); transform: skewX(-45deg) translate(.875em, -.875em) } }
+@-o-keyframes shape-shift-before { to { -o-transform: skewX(-45deg) translate(.875em, -.875em); transform: skewX(-45deg) translate(.875em, -.875em) } }
 @keyframes shape-shift-before { to { -webkit-transform: skewX(-45deg) translate(.875em, -.875em); transform: skewX(-45deg) translate(.875em, -.875em) } }
 
 .spinner::before {
     -webkit-transform: skewX(80deg) translate(.875em, -.875em);
-        -ms-transform: skewX(80deg) translate(.875em, -.875em);
-            transform: skewX(80deg) translate(.875em, -.875em);
-    -webkit-animation: shape-shift-before 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
-            animation: shape-shift-before 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	-moz-transform: skewX(80deg) translate(.875em, -.875em);
+	-ms-transform: skewX(80deg) translate(.875em, -.875em);
+	-o-transform: skewX(80deg) translate(.875em, -.875em);
+	transform: skewX(80deg) translate(.875em, -.875em);
+	-webkit-animation: shape-shift-before 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	-moz-animation: shape-shift-before 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+    -o-animation: shape-shift-before 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	animation: shape-shift-before 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
 }
 
 @-webkit-keyframes shape-shift-after { to { -webkit-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
-
+@-moz-keyframes shape-shift-after { to { -moz-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
+@-o-keyframes shape-shift-after { to { -o-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
 @keyframes shape-shift-after { to { -webkit-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
 
 .spinner::after {
     -webkit-transform: skewX(-80deg) translate(.875em, .875em);
-        -ms-transform: skewX(-80deg) translate(.875em, .875em);
-            transform: skewX(-80deg) translate(.875em, .875em);
+	-moz-transform: skewX(-80deg) translate(.875em, .875em);
+	-o-transform: skewX(-80deg) translate(.875em, .875em);
+	-ms-transform: skewX(-80deg) translate(.875em, .875em);
+	transform: skewX(-80deg) translate(.875em, .875em);
     -webkit-animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
-            animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	-moz-animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	-o-animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
 }
 
 #spinnerOverlay {
@@ -343,4 +404,30 @@ html, body {
     text-align: center;
     font-weight: bold;
     /* position: absolute; */
+}
+
+#pointerSpotted > svg {
+    width: 8vmin;
+    height: 8vmin;
+}
+
+#pointerSpotted {
+    position: absolute;
+    bottom: 5vmin;
+    right: 5vmin;
+    pointer-events: none;
+    transition: opacity 150ms ease-in-out;
+}
+
+#pointerSpotted.noPointer {
+	opacity: 0;
+}
+
+#pointerDot {
+    border-radius: 50%;
+    height: 15px;
+    width: 15px;
+    background-color: red;
+    position: absolute;
+    pointer-events: none;
 }

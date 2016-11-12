@@ -263,10 +263,10 @@ var WatchScreen = (function (_super) {
             switch (type) {
                 case 1:
                     switch (data) {
-                        case 0:
+                        case 1:
                             _this.deleteChar();
                             break;
-                        case 1:
+                        case 2:
                             _this.addSpace();
                             break;
                     }

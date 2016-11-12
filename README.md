@@ -13,3 +13,4 @@ The parameters should be seperated by dashes and can be in any order.
 * t9: Enable T9 mode instead of seperating the letters into individual letters
 * Dutch: Chooses the dutch language pack
 * English: Chooses the english language pack
+* Dot: Show a red dot that represents the cursor

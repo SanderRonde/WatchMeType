@@ -1,8 +1,22 @@
+interface LeapNoPointer {
+	foundPointer: false;
+	gesture?: Gesture;
+}
+
+interface LeapPointerData {
+	foundPointer: true;
+	direction: VectorArr,
+	stabilizedTipPosition: VectorArr;
+	gesture?: Gesture;
+}
+
+type WSData = LeapNoPointer|LeapPointerData;
+
+type XYZ<T> = [T, T, T];
+
+type VectorArr = XYZ<number>;
+
 declare module "leapjs" {
-
-	export type XYZ<T> = [T, T, T];
-
-	export type Vector = XYZ<Number>;
 
 	export interface LoopOptions {
 		/**
@@ -53,20 +67,20 @@ declare module "leapjs" {
 	}
 
 	export class Pointable {
-		direction: Vector;
+		direction: VectorArr;
 		id: string;
 		length: number;
-		stablizedTipPosition: Vector;
+		stablizedTipPosition: VectorArr;
 		timeVisible: number;
-		tipPosition: Vector;
-		tipVelocity: Vector;
+		tipPosition: VectorArr;
+		tipVelocity: VectorArr;
 		tool: boolean;
 		touchDistance: number;
 		touchZone: string;
 		valid: boolean;
 		width: number;
-		hand: () => Hand;
-		toString: () => string;
+		hand(): Hand;
+		toString(): string;
 	}
 
 	class GestureBase {
@@ -79,24 +93,24 @@ declare module "leapjs" {
 	}
 
 	export class CircleGesture extends GestureBase {
-		center: Vector;
-		normal: Vector;
+		center: VectorArr;
+		normal: VectorArr;
 		progress: number;
 		radius: number;
 		type: 'circle';
 	}
 
 	export class SwipeGesture extends GestureBase {
-		direction: Vector;
-		position: Vector;
+		direction: VectorArr;
+		position: VectorArr;
 		speed: number;
-		startPosition: Vector;
+		startPosition: VectorArr;
 		type: 'swipe';
 	}
 
 	export class ScreenTapGesture extends GestureBase {
-		direction: Vector;
-		position: Vector;
+		direction: VectorArr;
+		position: VectorArr;
 		type: 'screenTap';
 	}
 
@@ -111,17 +125,17 @@ declare module "leapjs" {
 	}
 
 	export interface Bone {
-		basis: XYZ<Vector>;
+		basis: XYZ<VectorArr>;
 		length: number;
 		nextJoint: Array<number>;
 		prevJoint: Array<number>;
 		type: BoneType
 		width: number;
-		center: () => Vector;
-		direction: () => Vector;
-		left: () => boolean;
-		lerp: (out: Vector, t: number) => void;
-		matrix: () => [
+		center(): VectorArr;
+		direction(): VectorArr;
+		left(): boolean;
+		lerp(out: VectorArr, t: number): void;
+		matrix(): [
 			[number, number, number, number],
 			[number, number, number, number],
 			[number, number, number, number],
@@ -139,14 +153,14 @@ declare module "leapjs" {
 
 	export interface Finger {
 		bones: Array<Bone>;
-		carpPosition: Vector;
-		dipPosition: Vector;
+		carpPosition: VectorArr;
+		dipPosition: VectorArr;
 		distal: Bone;
 		medial: Bone;
 		extended: boolean;
-		mcpPosition: Vector;
+		mcpPosition: VectorArr;
 		metacarpal: Bone;
-		pipPosition: Vector;
+		pipPosition: VectorArr;
 		proximal: Bone;
 		type: FingerName
 	}
@@ -154,59 +168,61 @@ declare module "leapjs" {
 	export interface Hand {
 		arm: Bone;
 		confidence: number;
-		direction: Vector;
+		direction: VectorArr;
 		fingers: Array<Pointable>;
 		grabStrength: number;
 		id: string;
 		indexFinger: Finger;
 		middleFinger: Finger;
-		palmNormal: Vector;
-		palmPosition: Vector;
-		palmVelocity: Vector;
+		palmNormal: VectorArr;
+		palmPosition: VectorArr;
+		palmVelocity: VectorArr;
 		palmWidth: number;
 		pinchStrength: number;
 		pinky: Finger;
 		pointables: Array<Pointable>;
 		ringFinger: Finger;
-		sphereCenter: Vector;
+		sphereCenter: VectorArr;
 		sphereRadius: number;
-		stabilizedPalmPosition: Vector;
+		stabilizedPalmPosition: VectorArr;
 		thumb: Finger;
 		timeVisible: number;
 		tools: Array<Pointable>;
 		type: 'right'|'left';
 		valid: boolean;
-		finger: (id: string) => Pointable;
-		pitch: () => number;
-		roll: () => number;
-		rotationAngle: (sinceFrame: Frame, axis?: Array<number>) => number;
-		rotationAxis: (sinceFrame: Frame) => Vector;
-		rotationMatrix: (sinceFrame: Frame) => [
+		finger(id: string): Pointable;
+		pitch(): number;
+		roll(): number;
+		rotationAngle(sinceFrame: Frame, axis?: Array<number>): number;
+		rotationAxis(sinceFrame: Frame): VectorArr;
+		rotationMatrix(sinceFrame: Frame): [
 			number, number, number, number, number, number, number, number, number
 		];
-		scaleFactor: (sinceFrame: Frame) => number;
-		toString: () => string;
-		translation: (sinceFrame: Frame) => Vector;
-		yaw: () => number;
+		scaleFactor(sinceFrame: Frame): number;
+		toString(): string;
+		translation(sinceFrame: Frame): VectorArr;
+		yaw(): number;
+
+		screenPosition(): VectorArr;
 	}
 
 	export interface InteractionBox {
-		center: Vector;
+		center: VectorArr;
 		depth: number;
 		height: number;
-		size: Vector;
+		size: VectorArr;
 		valid: boolean;
 		width: number;
-		denormalizePoint: (normalizedPosition: Vector) => Vector;
-		normalizePoint: (position: Vector, clamp: boolean) => Vector;
-		toString: () => string;
+		denormalizePoint(normalizedPosition: VectorArr): VectorArr;
+		normalizePoint(position: VectorArr, clamp: boolean): VectorArr;
+		toString(): string;
 	}
 
 	export class Frame {
 		new();
 		constructor();
 		currentFrameRate: number;
-		fingers: Array<Pointable>;
+		fingers: Array<Finger>;
 		gestures: Array<Gesture>;
 		hands: Array<Hand>;
 		id: string;
@@ -215,18 +231,18 @@ declare module "leapjs" {
 		timestamp: number;
 		tools: Array<Pointable>;
 		valid: boolean;
-		dump: () => string;
-		finger: (id: string) => Pointable;
-		hand: (id: string) => Hand;
-		pointable: (id: string) => Pointable;
-		rotationAngle: (sinceFrame: Frame, axis?: Array<number>) => number;
-		rotationAxis: (sinceFrame: Frame) => Vector;
-		rotationMatrix: (sinceFrame: Frame) => [number, number, number,
+		dump(): string;
+		finger(id: string): Finger;
+		hand(id: string): Hand;
+		pointable(id: string): Pointable;
+		rotationAngle(sinceFrame: Frame, axis?: Array<number>): number;
+		rotationAxis(sinceFrame: Frame): VectorArr;
+		rotationMatrix(sinceFrame: Frame): [number, number, number,
 			number, number, number, number, number, number];
-		scaleFactor: (sinceFrame: Frame) => number;
-		tool: (id: string) => Pointable;
-		toString: () => string;
-		translation: (sinceFrame: Frame) => Vector;
+		scaleFactor(sinceFrame: Frame): number;
+		tool(id: string): Pointable;
+		toString(): string;
+		translation(sinceFrame: Frame): VectorArr;
 	}
 
 	export type ControllerEvent = 'blur'|'connect'|'deviceAttached'|
@@ -249,22 +265,23 @@ declare module "leapjs" {
 	export class Controller {
 		new(options: LoopOptions);
 		frameEventName: 'animationFrame'|'deviceFrame';
-		connect: () => Controller;
-		connected: () => boolean;
-		disconnect: () => Controller;
-		frame: (history?: number) => Frame;
-		inBrowser: () => boolean;
-		setBackground: (state: boolean) => Controller;
-		setOptimizeHMD: (state: boolean) => Controller;
-		streaming: () => boolean;
-		plugin: (pluginName: string, factory: (options: any) => {
+		connect(): Controller;
+		connected(): boolean;
+		disconnect(): Controller;
+		frame(history?: number): Frame;
+		inBrowser(): boolean;
+		setBackground(state: boolean): Controller;
+		setOptimizeHMD(state: boolean): Controller;
+		streaming(): boolean;
+
+		static plugin(pluginName: string, factory: (options: any) => {
 			frame: Object|Function;
 			hand: Object|Function;
 			finger: Object|Function;
 			pointable: Object|Function;
-		}) => Controller;
-		use: (pluginName: string, options?: string) => Controller;
-		stopUsing: (pluginName: string) => Controller;
+		}): Controller;
+		use(pluginName: string, options?: string): Controller;
+		stopUsing(pluginName: string): Controller;
 
 		on(eventName: ControllerEvent, callback: (param1?: any, param2?: any) => void): Controller;
 		on(eventName: 'blur', callback: () => void): Controller;

@@ -3,12 +3,24 @@ var http = require('http');
 var path = require('path');
 var express = require('express');
 var websocket = require('websocket');
-var leap = require('leapjs');
+var Leap = require('leapjs');
+var gestureRecognition_1 = require('./gestureRecognition');
 var WebSocketServer = websocket.server;
-require('./libs/screenposition.js');
 var Router = require('router');
 var finalHandler = require('finalhandler');
 var PORT = 1234;
+function getFinger(frame, order) {
+    var pointables = frame.pointables;
+    var index = 0;
+    var lastPointable = null;
+    while (index < order.length && !lastPointable) {
+        lastPointable = pointables.filter(function (pointable) {
+            return frame.finger(pointable.id).type === order[index];
+        })[0];
+        index++;
+    }
+    return lastPointable;
+}
 new Promise(function (resolve) {
     var router = new Router();
     console.log(path.join(__dirname, '../app'));
@@ -26,27 +38,56 @@ new Promise(function (resolve) {
     resolve(server);
 }).then(function (server) {
     return new Promise(function (resolve) {
-        var activeConnections = [];
         var wsServer = new WebSocketServer({
             httpServer: server,
             autoAcceptConnections: true
         });
         wsServer.on('request', function (request) {
-            var connection = request.accept(null, request.origin);
-            activeConnections.push(connection);
-            connection.on('close', function () {
-                activeConnections.slice(activeConnections.indexOf(connection, 1));
-            });
+            var connection = request.accept('something', request.origin);
         });
-        resolve(activeConnections);
+        resolve(wsServer);
     });
-}).then(function (activeConnections) {
-    leap.loop({
+}).then(function (wsServer) {
+    var lastPointable = null;
+    var controller = Leap.loop({
         background: true,
-        optimizeHMD: false,
-        useAllPlugins: true
+        optimizeHMD: false
     }, function (frame) {
-        console.log(frame);
+        if (wsServer.connections.length === 0) {
+            return;
+        }
+        var message = {};
+        message.gesture = gestureRecognition_1.default(frame);
+        if (frame.pointables.length === 0) {
+            lastPointable = null;
+            message.foundPointer = false;
+        }
+        else {
+            message.foundPointer = true;
+            var pointable = void 0;
+            if (lastPointable && frame.pointable(lastPointable) &&
+                frame.pointable(lastPointable).valid) {
+                pointable = frame.pointable(lastPointable);
+            }
+            else {
+                pointable = getFinger(frame, [
+                    1,
+                    2,
+                    3,
+                    4,
+                    0
+                ]);
+                lastPointable = pointable.id;
+            }
+            if (!pointable.valid) {
+                message.foundPointer = false;
+                wsServer.broadcastUTF(JSON.stringify(message));
+                return;
+            }
+            message.direction = pointable.direction;
+            message.stabilizedTipPosition = pointable.stablizedTipPosition;
+        }
+        wsServer.broadcastUTF(JSON.stringify(message));
     });
 });
 //# sourceMappingURL=server.js.map

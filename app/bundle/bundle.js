@@ -446,10 +446,10 @@ var WatchScreen = (function (_super) {
             switch (type) {
                 case 1:
                     switch (data) {
-                        case 0:
+                        case 1:
                             _this.deleteChar();
                             break;
-                        case 1:
+                        case 2:
                             _this.addSpace();
                             break;
                     }
@@ -647,15 +647,23 @@ var hashSplit = window.location.hash.slice(1).split('-').map(function (option) {
 var DEBUG = hashSplit.indexOf('d') > -1;
 var USET9 = hashSplit.indexOf('t9') > -1;
 var LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
+var SHOWDOT = hashSplit.indexOf('dot') > -1;
+if (!SHOWDOT) {
+    document.getElementById('pointerDot').style.display = 'none';
+}
 if (DEBUG) {
     console.log("Using debug mode");
 }
-console.log(DEBUG, USET9);
 var GLOW_ANGLE = 22.5;
 var GLOW_START_RADIUS_PERCENTAGE = 50;
 var GLOW_ANGLE_FACTOR = 1.1;
 var KEY_PRESSED_MIN_DISTANCE = 90;
 var KEY_PRESSED_MAX_ANGLE_DIFF = 10;
+var FINGER_ADJUSTMENT = 1.3;
+var HALF_WINDOW_WIDTH = window.innerWidth / 2;
+var HALF_WINDOW_HEIGHT = window.innerHeight / 2;
+var symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) *
+    0.45;
 var isLoading = true;
 var cursorReset = true;
 var pointer = {
@@ -671,8 +679,8 @@ function shouldFireListener(gestureAngle, listenerAngle) {
 }
 function radiusFromCenter(pos) {
     var center = {
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2
+        x: HALF_WINDOW_WIDTH,
+        y: HALF_WINDOW_HEIGHT
     };
     return Math.sqrt(Math.pow(center.x - pos.x, 2) + Math.pow(center.y - pos.y, 2));
 }
@@ -705,14 +713,12 @@ var comm = {
         });
     },
     fireSymbolListeners: function (pos) {
-        var gestureAngle = Math.atan2(pos.y - window.innerHeight / 2, pos.x - window.innerWidth / 2) * 180 / Math.PI;
+        var gestureAngle = Math.atan2(pos.y - HALF_WINDOW_HEIGHT, pos.x - HALF_WINDOW_WIDTH) * 180 / Math.PI;
         if (gestureAngle < 0) {
             gestureAngle = 360 + gestureAngle;
         }
         gestureAngle += 90;
         gestureAngle = gestureAngle % 360;
-        var symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) *
-            0.45;
         var radius = radiusFromCenter(pos);
         if (radius >= symbolRadius * (GLOW_START_RADIUS_PERCENTAGE / 100)) {
             var maxGlowIntensity_1 = getGlowIntensity(symbolRadius, radius);
@@ -782,8 +788,13 @@ ReactDOM.render(React.createElement(components.MainFace, {
     useT9: USET9,
     t9Lib: t9
 }), document.getElementById('mainContainer'));
+var pointerDot = document.getElementById('pointerDot');
 function updatePointerPos() {
     if (lastPointerPos.x !== pointer.x || lastPointerPos.y !== pointer.y) {
+        if (SHOWDOT) {
+            pointerDot.style.top = (pointer.y - 7.5) + "px";
+            pointerDot.style.left = (pointer.x - 7.5) + "px";
+        }
         comm.fireSymbolListeners(pointer);
         lastPointerPos.x = pointer.x;
         lastPointerPos.y = pointer.y;
@@ -796,11 +807,39 @@ if (DEBUG) {
         pointer.y = e.clientY;
     };
 }
-var websocket = new WebSocket('ws://localhost:1234');
+var websocket = new WebSocket('ws://localhost:1234', 'echo-protocol');
+var pointerIcon = document.getElementById('pointerSpotted');
+function getPointerRadius(vector, directionAngle) {
+    var currentRatio = Math.abs(vector[2]) /
+        (Math.abs(vector[0]) + Math.abs(vector[1]));
+    return Math.min((1 / currentRatio) * FINGER_ADJUSTMENT, 1);
+}
+function getPointer2DDirection(vector) {
+    var angle = Math.atan2(vector[1], vector[0]) * 180 / Math.PI;
+    return angle;
+}
+function handleGestures(data) {
+    if (data.gesture === 0) {
+        return false;
+    }
+    console.log('Found gesture', data.gesture);
+}
 websocket.onmessage = function (event) {
-    var data = event.data;
-    pointer.x = data.x;
-    pointer.y = data.y;
+    var stringifiedData = event.data;
+    var data = JSON.parse(stringifiedData);
+    var spottedGesture = handleGestures(data);
+    console.log(data.gesture);
+    if (data.foundPointer) {
+        var pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
+        var radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
+        var radiusPx = radiusPercentage * symbolRadius;
+        pointer.x = HALF_WINDOW_WIDTH + (Math.cos(pointer2DDirection) * radiusPx);
+        pointer.y = HALF_WINDOW_HEIGHT + (Math.sin(pointer2DDirection) * radiusPx);
+        pointerIcon.classList.remove('noPointer');
+    }
+    else if (!spottedGesture) {
+        pointerIcon.classList.add('noPointer');
+    }
 };
 function finishLoading() {
     document.getElementById('spinnerOverlay').style.opacity = '0';

@@ -4,6 +4,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as components from './components';
+import * as Leap from 'leapjs';
 const t9: T9Defs = require('./t9.js');
 
 const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
@@ -12,16 +13,25 @@ const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
 const DEBUG = hashSplit.indexOf('d') > -1;
 const USET9 = hashSplit.indexOf('t9') > -1;
 const LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
+const SHOWDOT = hashSplit.indexOf('dot') > -1;
+if (!SHOWDOT) {
+	document.getElementById('pointerDot').style.display = 'none';
+}
 if (DEBUG) {
 	console.log(`Using debug mode`);
 }
 
-console.log(DEBUG, USET9);
 const GLOW_ANGLE = 22.5;
 const GLOW_START_RADIUS_PERCENTAGE = 50;
 const GLOW_ANGLE_FACTOR = 1.1;
 const KEY_PRESSED_MIN_DISTANCE = 90;
 const KEY_PRESSED_MAX_ANGLE_DIFF = 10;
+const FINGER_ADJUSTMENT = 1.3;
+
+const HALF_WINDOW_WIDTH = window.innerWidth / 2;
+const HALF_WINDOW_HEIGHT = window.innerHeight / 2;
+const symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) *
+	0.45;
 
 let isLoading = true;
 let cursorReset = true;
@@ -42,8 +52,8 @@ function shouldFireListener(gestureAngle: number,
 
 function radiusFromCenter(pos: PointerPosition): number {
 	const center = {
-		x: window.innerWidth / 2,
-		y: window.innerHeight / 2
+		x: HALF_WINDOW_WIDTH,
+		y: HALF_WINDOW_HEIGHT
 	};
 
 	return Math.sqrt(
@@ -83,16 +93,14 @@ const comm: CommHandlers = {
 		});
 	},
 	fireSymbolListeners(pos) {
-		let gestureAngle = Math.atan2(pos.y - window.innerHeight / 2,
-			pos.x - window.innerWidth / 2) * 180 / Math.PI;
+		let gestureAngle = Math.atan2(pos.y - HALF_WINDOW_HEIGHT,
+			pos.x - HALF_WINDOW_WIDTH) * 180 / Math.PI;
 		if (gestureAngle < 0) {
 			gestureAngle = 360 + gestureAngle;
 		}
 		gestureAngle += 90;
 		gestureAngle = gestureAngle % 360;
 
-		const symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) *
-			0.45;
 		const radius = radiusFromCenter(pos);
 
 		if (radius >= symbolRadius * (GLOW_START_RADIUS_PERCENTAGE / 100)) {
@@ -176,9 +184,14 @@ ReactDOM.render(React.createElement(components.MainFace, {
 	t9Lib: t9
 }), document.getElementById('mainContainer'));
 
-
+const pointerDot = document.getElementById('pointerDot');
 function updatePointerPos() {
 	if (lastPointerPos.x !== pointer.x || lastPointerPos.y !== pointer.y) {
+		if (SHOWDOT) {
+			pointerDot.style.top = `${pointer.y - 7.5}px`;
+			pointerDot.style.left = `${pointer.x - 7.5}px`;
+		}
+
 		comm.fireSymbolListeners(pointer);
 		lastPointerPos.x = pointer.x;
 		lastPointerPos.y = pointer.y;
@@ -193,12 +206,49 @@ if (DEBUG) {
 	}
 }
 
-const websocket = new WebSocket('ws://localhost:1234');
-websocket.onmessage = (event) => {
-	const data: WSData = event.data;
+const websocket = new WebSocket('ws://localhost:1234', 'echo-protocol');
+const pointerIcon = document.getElementById('pointerSpotted');
+function getPointerRadius(vector: VectorArr, directionAngle: number): number {
+	//Max from the center is bending your finger about 30 degrees,
+	const currentRatio = Math.abs(vector[2]) /
+		(Math.abs(vector[0]) + Math.abs(vector[1]));
 
-	pointer.x = data.x;
-	pointer.y = data.y;
+	return Math.min((1 / currentRatio) * FINGER_ADJUSTMENT, 1);
+}
+
+function getPointer2DDirection(vector: VectorArr): number {
+	let angle = Math.atan2(vector[1], vector[0]) * 180 / Math.PI;
+	return angle;
+}
+
+function handleGestures(data: WSData): boolean {
+	if (data.gesture === Gesture.none) {
+		return false;
+	}
+
+	console.log('Found gesture', data.gesture);
+}
+
+websocket.onmessage = (event) => {
+	const stringifiedData: string = event.data;
+	const data = JSON.parse(stringifiedData) as WSData;
+
+	const spottedGesture = handleGestures(data);
+
+	console.log(data.gesture);
+	if (data.foundPointer) {
+		//Get the amount of degrees that the finger is moving to the outside
+		const pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
+		const radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
+		
+		const radiusPx = radiusPercentage * symbolRadius;
+		pointer.x = HALF_WINDOW_WIDTH + (Math.cos(pointer2DDirection) * radiusPx);
+		pointer.y = HALF_WINDOW_HEIGHT + (Math.sin(pointer2DDirection) * radiusPx);
+
+		pointerIcon.classList.remove('noPointer');
+	} else if (!spottedGesture) {
+		pointerIcon.classList.add('noPointer');
+	}
 }
 
 function finishLoading() {
