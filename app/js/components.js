@@ -265,9 +265,17 @@ var WatchScreen = (function (_super) {
                     switch (data) {
                         case 1:
                             _this.deleteChar();
+                            _this.backspaceButton.classList.add('active');
+                            window.setTimeout(function () {
+                                _this.backspaceButton.classList.remove('active');
+                            }, 100);
                             break;
                         case 2:
                             _this.addSpace();
+                            _this.spacebarButton.classList.add('active');
+                            window.setTimeout(function () {
+                                _this.spacebarButton.classList.remove('active');
+                            }, 100);
                             break;
                     }
                     break;
@@ -393,7 +401,7 @@ var WatchScreen = (function (_super) {
                     React.createElement("span", {className: "mainTextSpace"}, ' ')));
             })), 
             React.createElement("div", {id: "textButtons"}, 
-                React.createElement("div", {className: "textButton", id: "backspaceButton", onClick: this.deleteChar.bind(this)}, 
+                React.createElement("div", {className: "textButton", id: "backspaceButton", onClick: this.deleteChar.bind(this), ref: function (backspaceButton) { return _this.backspaceButton = backspaceButton; }}, 
                     React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
                         React.createElement("path", {d: "M0 0h24v24H0z", fill: "none"}), 
                         React.createElement("path", {d: "M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"}))
@@ -406,7 +414,7 @@ var WatchScreen = (function (_super) {
                 React.createElement("div", {className: "textButton", id: "symbolsButton", onClick: this.toggleSymbols.bind(this), ref: function (symbolButton) { return _this.symbolButton = symbolButton; }}, 
                     React.createElement("div", {className: "textSymbol"}, "123")
                 ), 
-                React.createElement("div", {className: "textButton", id: "spacebarButton", onClick: this.addSpace.bind(this)}, 
+                React.createElement("div", {className: "textButton", id: "spacebarButton", onClick: this.addSpace.bind(this), ref: function (spacebarButton) { return _this.spacebarButton = spacebarButton; }}, 
                     React.createElement("svg", {height: "56", viewBox: "0 0 24 24", width: "56", xmlns: "http://www.w3.org/2000/svg"}, 
                         React.createElement("path", {d: "M0 0h24v24H0V0z", fill: "none"}), 
                         React.createElement("path", {d: "M18 9v4H6V9H4v6h16V9z"}))

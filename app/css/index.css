@@ -144,7 +144,7 @@ html, body {
 	transform: translateX(0.4vmin);
 }
 
-.textButton:active {
+.textButton:active, .textButton.active {
 	background-color: rgb(150, 150, 150);
 }
 
@@ -154,7 +154,7 @@ html, body {
 	color: black;
 }
 
-.textButton.toggled:active {
+.textButton.toggled:active, .textButton.toggled.active {
 	background-color: black;
 }
 
@@ -162,7 +162,7 @@ html, body {
 	background-color: rgb(0, 103, 241);
 }
 
-#sendButton:active {
+#sendButton:active, #sendButton.active {
 	background-color: rgb(0, 216, 0);
 }
 

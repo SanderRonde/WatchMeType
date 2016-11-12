@@ -41,22 +41,22 @@ function trimTrackedGestures() {
     }
 }
 function recognize(frame) {
+    var returnVal = 0;
     frame.gestures.forEach(function (gesture) {
         if (gesture.type === 'swipe' && trackedGestures.indexOf(gesture.id) === -1) {
             trackedGestures.push(gesture.id);
             trimTrackedGestures();
             var vector = formatVector(gesture.direction);
             var cone = get3DCone(vector);
-            console.log('cone', cone);
             if (cone === Cone.Left) {
-                return 1;
+                returnVal = 1;
             }
             else if (cone === Cone.Bottom) {
-                return 2;
+                returnVal = 2;
             }
         }
     });
-    return 0;
+    return returnVal;
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = recognize;

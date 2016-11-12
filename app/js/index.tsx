@@ -5,6 +5,10 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as components from './components';
 import * as Leap from 'leapjs';
+import * as constants from './constants';
+
+window['constants'] = constants;
+
 const t9: T9Defs = require('./t9.js');
 
 const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
@@ -21,15 +25,7 @@ if (DEBUG) {
 	console.log(`Using debug mode`);
 }
 
-const GLOW_ANGLE = 22.5;
-const GLOW_START_RADIUS_PERCENTAGE = 50;
-const GLOW_ANGLE_FACTOR = 1.1;
-const KEY_PRESSED_MIN_DISTANCE = 90;
-const KEY_PRESSED_MAX_ANGLE_DIFF = 10;
-const FINGER_ADJUSTMENT = 1.3;
 
-const HALF_WINDOW_WIDTH = window.innerWidth / 2;
-const HALF_WINDOW_HEIGHT = window.innerHeight / 2;
 const symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) *
 	0.45;
 
@@ -47,13 +43,13 @@ const lastPointerPos: PointerPosition = {
 
 function shouldFireListener(gestureAngle: number, 
 	listenerAngle: number): boolean {
-		return Math.abs(listenerAngle - listenerAngle) <= GLOW_ANGLE;
+		return Math.abs(listenerAngle - listenerAngle) <= constants.get('GLOW_ANGLE');
 	}
 
 function radiusFromCenter(pos: PointerPosition): number {
 	const center = {
-		x: HALF_WINDOW_WIDTH,
-		y: HALF_WINDOW_HEIGHT
+		x: constants.get('HALF_WINDOW_WIDTH'),
+		y: constants.get('HALF_WINDOW_HEIGHT')
 	};
 
 	return Math.sqrt(
@@ -66,21 +62,25 @@ function getGlowIntensity(symbolRadius: number, radius: number): number {
 }
 
 function getAngleDifference(angle1: number, angle2: number): number {
-	if (angle1 >= 360 - GLOW_ANGLE && angle2 <= GLOW_ANGLE) {
-		angle2 += 360;
-	} else if (angle2 >= 360 - GLOW_ANGLE && angle1 <= GLOW_ANGLE) {
-		angle1 += 360;
-	}
+	if (angle1 >= 360 - constants.get('GLOW_ANGLE') &&
+		angle2 <= constants.get('GLOW_ANGLE')) {
+			angle2 += 360;
+	} else if (angle2 >= 360 - constants.get('GLOW_ANGLE') &&
+		angle1 <= constants.get('GLOW_ANGLE')) {
+			angle1 += 360;
+		}
 	return Math.abs(angle1 - angle2);
 }
 
 function getAngleGlowIntensity(max: number, difference: number): number {
-	return (((GLOW_ANGLE - difference * GLOW_ANGLE_FACTOR) * max) / GLOW_ANGLE) || 0;
+	return (((constants.get('GLOW_ANGLE') - 
+		difference * constants.get('GLOW_ANGLE_FACTOR')) * max)
+		/ constants.get('GLOW_ANGLE')) || 0;
 }
 
 function keyPressed(glowIntensity: number, angleDifference: number): boolean {
-	return cursorReset && glowIntensity >= KEY_PRESSED_MIN_DISTANCE &&
-		angleDifference <= KEY_PRESSED_MAX_ANGLE_DIFF;
+	return cursorReset && glowIntensity >= constants.get('KEY_PRESSED_MIN_DISTANCE') &&
+		angleDifference <= constants.get('KEY_PRESSED_MAX_ANGLE_DIFF');
 }
 
 const comm: CommHandlers = {
@@ -93,8 +93,8 @@ const comm: CommHandlers = {
 		});
 	},
 	fireSymbolListeners(pos) {
-		let gestureAngle = Math.atan2(pos.y - HALF_WINDOW_HEIGHT,
-			pos.x - HALF_WINDOW_WIDTH) * 180 / Math.PI;
+		let gestureAngle = Math.atan2(pos.y - constants.get('HALF_WINDOW_HEIGHT'),
+			pos.x - constants.get('HALF_WINDOW_WIDTH')) * 180 / Math.PI;
 		if (gestureAngle < 0) {
 			gestureAngle = 360 + gestureAngle;
 		}
@@ -103,12 +103,12 @@ const comm: CommHandlers = {
 
 		const radius = radiusFromCenter(pos);
 
-		if (radius >= symbolRadius * (GLOW_START_RADIUS_PERCENTAGE / 100)) {
+		if (radius >= symbolRadius * (constants.get('GLOW_START_RADIUS_PERCENTAGE') / 100)) {
 			const maxGlowIntensity = getGlowIntensity(symbolRadius, radius);
 
 			if (USET9) {
 				gestureAngle += (360 / 26);
-				if (maxGlowIntensity >= KEY_PRESSED_MIN_DISTANCE * 0.8 && cursorReset) {
+				if (maxGlowIntensity >= constants.get('KEY_PRESSED_MIN_DISTANCE') * 0.8 && cursorReset) {
 					//Some area was toggled, find out which one
 					let toggledIndex = comm._symbolListeners.length - 1;
 					let lastSlice = 0;
@@ -213,7 +213,7 @@ function getPointerRadius(vector: VectorArr, directionAngle: number): number {
 	const currentRatio = Math.abs(vector[2]) /
 		(Math.abs(vector[0]) + Math.abs(vector[1]));
 
-	return Math.min((1 / currentRatio) * FINGER_ADJUSTMENT, 1);
+	return Math.min((1 / currentRatio) * constants.get('FINGER_ADJUSTMENT'), 1);
 }
 
 function getPointer2DDirection(vector: VectorArr): number {
@@ -226,7 +226,7 @@ function handleGestures(data: WSData): boolean {
 		return false;
 	}
 
-	console.log('Found gesture', data.gesture);
+	comm.fireMainFaceListener(MainFaceCommType.gesture, data.gesture);
 }
 
 websocket.onmessage = (event) => {
@@ -235,15 +235,16 @@ websocket.onmessage = (event) => {
 
 	const spottedGesture = handleGestures(data);
 
-	console.log(data.gesture);
 	if (data.foundPointer) {
 		//Get the amount of degrees that the finger is moving to the outside
 		const pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
 		const radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
 		
 		const radiusPx = radiusPercentage * symbolRadius;
-		pointer.x = HALF_WINDOW_WIDTH + (Math.cos(pointer2DDirection) * radiusPx);
-		pointer.y = HALF_WINDOW_HEIGHT + (Math.sin(pointer2DDirection) * radiusPx);
+		pointer.x = constants.get('HALF_WINDOW_WIDTH') +
+			(Math.cos(pointer2DDirection) * radiusPx);
+		pointer.y = constants.get('HALF_WINDOW_HEIGHT') + 
+			(Math.sin(pointer2DDirection) * radiusPx);
 
 		pointerIcon.classList.remove('noPointer');
 	} else if (!spottedGesture) {

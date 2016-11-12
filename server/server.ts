@@ -21,7 +21,8 @@ function getFinger(frame: Leap.Frame, order: Array<Leap.FingerName>
 		let lastPointable = null;
 		while (index < order.length && !lastPointable) { 
 			lastPointable = pointables.filter((pointable) => {
-				return frame.finger(pointable.id).type === order[index];
+				const finger = frame.finger(pointable.id);
+				return finger.type === order[index] && finger.extended;
 			})[0];
 			index++;
 		}
@@ -60,6 +61,7 @@ new Promise((resolve) => {
 	});
 }).then((wsServer: websocket.server) => {
 	let lastPointable: string = null;
+	let hasNoEvents: boolean = true;
 
 	const controller = Leap.loop({
 		background: true,
@@ -72,16 +74,20 @@ new Promise((resolve) => {
 		const message: WSData = {} as any;
 		message.gesture = recognizeGesture(frame);
 
-		if (frame.pointables.length === 0) {
-			lastPointable = null;
-			message.foundPointer = false;
+		if (frame.pointables.length === 0 ||
+			frame.pointables.filter((pointable) => {
+				return frame.finger(pointable.id).extended;
+			}).length > 1) {
+				lastPointable = null;
+				message.foundPointer = false;
 		} else {
 			message.foundPointer = true;
 			let pointable: Leap.Pointable;
 			if (lastPointable && frame.pointable(lastPointable) &&
-				frame.pointable(lastPointable).valid) {
-				//Follow the same finger as before
-				pointable = frame.pointable(lastPointable);
+				frame.pointable(lastPointable).valid &&
+				frame.finger(lastPointable).extended) {
+					//Follow the same finger as before
+					pointable = frame.pointable(lastPointable);
 			} else {
 				pointable = getFinger(frame, [
 					Leap.FingerName.index,
@@ -90,9 +96,11 @@ new Promise((resolve) => {
 					Leap.FingerName.pinky,
 					Leap.FingerName.thumb
 				]);
-				lastPointable = pointable.id;
+				if (pointable) {
+					lastPointable = pointable.id;
+				}
 			}
-			if (!pointable.valid) {
+			if (!pointable || !pointable.valid) {
 				message.foundPointer = false;
 				wsServer.broadcastUTF(JSON.stringify(message));
 				return;
@@ -101,6 +109,16 @@ new Promise((resolve) => {
 			(message as LeapPointerData).direction = pointable.direction; 
 			(message as LeapPointerData).stabilizedTipPosition = pointable.stablizedTipPosition;
 		}
-		wsServer.broadcastUTF(JSON.stringify(message));
+
+		if (!message.foundPointer && message.gesture === Gesture.none) {
+			if (!hasNoEvents) {
+				//Send a message notifying that activity has stopped
+				wsServer.broadcastUTF(JSON.stringify(message));
+				hasNoEvents = true;
+			}
+		} else {
+			wsServer.broadcastUTF(JSON.stringify(message));
+			hasNoEvents = false;
+		}
 	});
 });

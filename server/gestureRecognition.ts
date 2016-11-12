@@ -54,6 +54,7 @@ function trimTrackedGestures() {
 }
 
 export default function recognize(frame: Leap.Frame): Gesture {
+	let returnVal = Gesture.none;
 	frame.gestures.forEach((gesture) => {
 		if (gesture.type === 'swipe' && trackedGestures.indexOf(gesture.id) === -1 ) {
 			trackedGestures.push(gesture.id);
@@ -64,13 +65,12 @@ export default function recognize(frame: Leap.Frame): Gesture {
 			//Determine the general direction the movement was in
 			const cone = get3DCone(vector);
 
-			console.log('cone', cone);
 			if (cone === Cone.Left) {
-				return Gesture.clear;
+				returnVal = Gesture.clear;
 			} else if (cone === Cone.Bottom) {
-				return Gesture.space;
+				returnVal = Gesture.space;
 			}
 		}
 	});
-	return Gesture.none;
+	return returnVal;
 }

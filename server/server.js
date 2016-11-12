@@ -15,7 +15,8 @@ function getFinger(frame, order) {
     var lastPointable = null;
     while (index < order.length && !lastPointable) {
         lastPointable = pointables.filter(function (pointable) {
-            return frame.finger(pointable.id).type === order[index];
+            var finger = frame.finger(pointable.id);
+            return finger.type === order[index] && finger.extended;
         })[0];
         index++;
     }
@@ -49,6 +50,7 @@ new Promise(function (resolve) {
     });
 }).then(function (wsServer) {
     var lastPointable = null;
+    var hasNoEvents = true;
     var controller = Leap.loop({
         background: true,
         optimizeHMD: false
@@ -58,7 +60,10 @@ new Promise(function (resolve) {
         }
         var message = {};
         message.gesture = gestureRecognition_1.default(frame);
-        if (frame.pointables.length === 0) {
+        if (frame.pointables.length === 0 ||
+            frame.pointables.filter(function (pointable) {
+                return frame.finger(pointable.id).extended;
+            }).length > 1) {
             lastPointable = null;
             message.foundPointer = false;
         }
@@ -66,7 +71,8 @@ new Promise(function (resolve) {
             message.foundPointer = true;
             var pointable = void 0;
             if (lastPointable && frame.pointable(lastPointable) &&
-                frame.pointable(lastPointable).valid) {
+                frame.pointable(lastPointable).valid &&
+                frame.finger(lastPointable).extended) {
                 pointable = frame.pointable(lastPointable);
             }
             else {
@@ -77,9 +83,11 @@ new Promise(function (resolve) {
                     4,
                     0
                 ]);
-                lastPointable = pointable.id;
+                if (pointable) {
+                    lastPointable = pointable.id;
+                }
             }
-            if (!pointable.valid) {
+            if (!pointable || !pointable.valid) {
                 message.foundPointer = false;
                 wsServer.broadcastUTF(JSON.stringify(message));
                 return;
@@ -87,7 +95,16 @@ new Promise(function (resolve) {
             message.direction = pointable.direction;
             message.stabilizedTipPosition = pointable.stablizedTipPosition;
         }
-        wsServer.broadcastUTF(JSON.stringify(message));
+        if (!message.foundPointer && message.gesture === 0) {
+            if (!hasNoEvents) {
+                wsServer.broadcastUTF(JSON.stringify(message));
+                hasNoEvents = true;
+            }
+        }
+        else {
+            wsServer.broadcastUTF(JSON.stringify(message));
+            hasNoEvents = false;
+        }
     });
 });
 //# sourceMappingURL=server.js.map
