@@ -2,8 +2,9 @@
   "name": "watch-me-type",
   "version": "1.0.0",
   "description": "",
-  "main": "server/server.ts",
+  "main": "server/server.js",
   "scripts": {
+    "start": "node server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
