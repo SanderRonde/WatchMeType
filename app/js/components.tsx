@@ -339,6 +339,9 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 		console.log(prevLetters, this.props.data.index);
 		const sliceData = divideCircle(CIRCLE_DEGREES / SLICES, symbols).map((slice) => {
 			slice.angle += this.props.data.angle;
+			if (symbols > 3) {
+				slice.angle -= 2.5;
+			}
 			slice.index += prevLetters;
 			return slice;
 		});

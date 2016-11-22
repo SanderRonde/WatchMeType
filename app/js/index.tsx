@@ -15,7 +15,7 @@ const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
 	return option.toLowerCase();
 });
 const DEBUG = hashSplit.indexOf('d') > -1;
-const USET9 = hashSplit.indexOf('t9') > -1;
+const USET9 = hashSplit.indexOf('not9') === -1;
 const LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
 const SHOWDOT = hashSplit.indexOf('dot') > -1;
 if (!SHOWDOT) {

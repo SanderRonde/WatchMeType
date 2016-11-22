@@ -9,7 +9,7 @@ var hashSplit = window.location.hash.slice(1).split('-').map(function (option) {
     return option.toLowerCase();
 });
 var DEBUG = hashSplit.indexOf('d') > -1;
-var USET9 = hashSplit.indexOf('t9') > -1;
+var USET9 = hashSplit.indexOf('not9') === -1;
 var LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
 var SHOWDOT = hashSplit.indexOf('dot') > -1;
 if (!SHOWDOT) {

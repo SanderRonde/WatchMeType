@@ -242,6 +242,9 @@ var T9Slice = (function (_super) {
         console.log(prevLetters, this.props.data.index);
         var sliceData = divideCircle(CIRCLE_DEGREES / SLICES, symbols).map(function (slice) {
             slice.angle += _this.props.data.angle;
+            if (symbols > 3) {
+                slice.angle -= 2.5;
+            }
             slice.index += prevLetters;
             return slice;
         });

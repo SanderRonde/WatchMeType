@@ -425,6 +425,9 @@ var T9Slice = (function (_super) {
         console.log(prevLetters, this.props.data.index);
         var sliceData = divideCircle(CIRCLE_DEGREES / SLICES, symbols).map(function (slice) {
             slice.angle += _this.props.data.angle;
+            if (symbols > 3) {
+                slice.angle -= 2.5;
+            }
             slice.index += prevLetters;
             return slice;
         });
@@ -740,7 +743,7 @@ var hashSplit = window.location.hash.slice(1).split('-').map(function (option) {
     return option.toLowerCase();
 });
 var DEBUG = hashSplit.indexOf('d') > -1;
-var USET9 = hashSplit.indexOf('t9') > -1;
+var USET9 = hashSplit.indexOf('not9') === -1;
 var LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
 var SHOWDOT = hashSplit.indexOf('dot') > -1;
 if (!SHOWDOT) {
