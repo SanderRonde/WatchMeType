@@ -2,18 +2,35 @@ import * as React from 'react';
 /// <reference path="./defs.d.ts" />
 
 const CIRCLE_DEGREES = 360;
-const T9_SLICE_DEGREES = CIRCLE_DEGREES / 9;
+const SLICES = 8;
+const T9_SLICE_DEGREES = CIRCLE_DEGREES / SLICES;
 const T9Keymap = {
 	1: 'abc',
 	2: 'def',
 	3: 'ghi',
 	4: 'jkl',
 	5: 'mno',
-	6: 'pqr',
-	7: 'stu',
-	8: 'vwx',
-	9: 'yz',
+	6: 'pqrs',
+	7: 'tuv',
+	8: 'wxyz'
 };
+
+/**
+ * Converts an object to an array of its members
+ * 
+ * @param {Object} obj - The object to array-ify
+ * 
+ * @return {any[]} Its members
+ */
+function objToArr<T>(obj: {
+	[key: string]: T;
+}): Array<T> {
+	return Object.getOwnPropertyNames(obj).map((index) => {
+		return obj[index];
+	});
+}
+
+const T9Arr = objToArr(T9Keymap);
 
 /**
  * Divides the circle in "entries" seperate slices
@@ -87,6 +104,9 @@ function getSymbol(index: number, isCaps: boolean, isTextSymbol: boolean): {
 	symbol: string;
 	value: string;
 } {
+	if (isCaps || isTextSymbol) {
+		debugger;
+	}
 	if (isTextSymbol) {
 		//Switch to the symbols instead of TEXT_CHARS
 		if (index <= 9) {
@@ -309,28 +329,38 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 		})
 	}
 	render() {
-		const sliceData = divideCircle(CIRCLE_DEGREES / 9, 3).map((slice) => {
+		const symbols = T9Keymap[this.props.data.index + 1].length;
+		const prevLetters = (T9Arr as any).reduce((prev: number|string, current: string, index: number) => {
+			if (index < this.props.data.index) {
+				return (typeof prev === 'number' ? prev : prev.length) + current.length;
+			}
+			return (typeof prev === 'number' ? prev : 0);
+		});
+		console.log(prevLetters, this.props.data.index);
+		const sliceData = divideCircle(CIRCLE_DEGREES / SLICES, symbols).map((slice) => {
 			slice.angle += this.props.data.angle;
-			slice.index += this.props.data.index * 3;
+			slice.index += prevLetters;
 			return slice;
 		});
 
 		const centerSliceSize = T9_SLICE_DEGREES - 1;
+		const startAngle = 3.75 + (this.props.data.index * 45);
+		console.log(startAngle);
 		
 		return (
 			<div className="T9SliceCont">
 				<div className="T9SliceBackground">
 					<svg viewBox="0 0 300 300">
 						<path className="T9SliceBorder" 
-							d={getSvgPathForSlice(sliceData[1].angle + 90 - (centerSliceSize / 2),
+							d={getSvgPathForSlice(startAngle - (centerSliceSize / 2),
 								1)}></path>
 						<path className="T9SliceCenter" 
-							d={getSvgPathForSlice(sliceData[1].angle + 90, centerSliceSize)}
+							d={getSvgPathForSlice(startAngle, centerSliceSize)}
 							ref={centerSliceBackground => this.centerSliceBackground = 
 								centerSliceBackground}>
 						</path>
 						<path className="T9SliceBorder" 
-							d={getSvgPathForSlice(sliceData[1].angle + 90 + (centerSliceSize / 2),
+							d={getSvgPathForSlice(startAngle + (centerSliceSize / 2),
 								1)}></path>
 					</svg>
 				</div>
@@ -624,7 +654,7 @@ export class MainFace extends React.Component<any, any> {
 							<div className="centered">
 								<div id="faceSlices">
 									{this.props.useT9 ?
-										divideCircle(CIRCLE_DEGREES, 9)
+										divideCircle(CIRCLE_DEGREES, SLICES)
 											.map((slice: {
 												index: number;
 												angle: number;

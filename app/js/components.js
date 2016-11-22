@@ -6,18 +6,24 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var React = require('react');
 var CIRCLE_DEGREES = 360;
-var T9_SLICE_DEGREES = CIRCLE_DEGREES / 9;
+var SLICES = 8;
+var T9_SLICE_DEGREES = CIRCLE_DEGREES / SLICES;
 var T9Keymap = {
     1: 'abc',
     2: 'def',
     3: 'ghi',
     4: 'jkl',
     5: 'mno',
-    6: 'pqr',
-    7: 'stu',
-    8: 'vwx',
-    9: 'yz',
+    6: 'pqrs',
+    7: 'tuv',
+    8: 'wxyz'
 };
+function objToArr(obj) {
+    return Object.getOwnPropertyNames(obj).map(function (index) {
+        return obj[index];
+    });
+}
+var T9Arr = objToArr(T9Keymap);
 function divideCircle(maxAngle, entries) {
     var res = [];
     var angle = maxAngle / entries;
@@ -52,6 +58,9 @@ var SYMBOLS = [
     };
 });
 function getSymbol(index, isCaps, isTextSymbol) {
+    if (isCaps || isTextSymbol) {
+        debugger;
+    }
     if (isTextSymbol) {
         if (index <= 9) {
             return {
@@ -223,19 +232,29 @@ var T9Slice = (function (_super) {
     }
     T9Slice.prototype.render = function () {
         var _this = this;
-        var sliceData = divideCircle(CIRCLE_DEGREES / 9, 3).map(function (slice) {
+        var symbols = T9Keymap[this.props.data.index + 1].length;
+        var prevLetters = T9Arr.reduce(function (prev, current, index) {
+            if (index < _this.props.data.index) {
+                return (typeof prev === 'number' ? prev : prev.length) + current.length;
+            }
+            return (typeof prev === 'number' ? prev : 0);
+        });
+        console.log(prevLetters, this.props.data.index);
+        var sliceData = divideCircle(CIRCLE_DEGREES / SLICES, symbols).map(function (slice) {
             slice.angle += _this.props.data.angle;
-            slice.index += _this.props.data.index * 3;
+            slice.index += prevLetters;
             return slice;
         });
         var centerSliceSize = T9_SLICE_DEGREES - 1;
+        var startAngle = 3.75 + (this.props.data.index * 45);
+        console.log(startAngle);
         return (React.createElement("div", {className: "T9SliceCont"}, 
             React.createElement("div", {className: "T9SliceBackground"}, 
                 React.createElement("svg", {viewBox: "0 0 300 300"}, 
-                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(sliceData[1].angle + 90 - (centerSliceSize / 2), 1)}), 
-                    React.createElement("path", {className: "T9SliceCenter", d: getSvgPathForSlice(sliceData[1].angle + 90, centerSliceSize), ref: function (centerSliceBackground) { return _this.centerSliceBackground =
+                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(startAngle - (centerSliceSize / 2), 1)}), 
+                    React.createElement("path", {className: "T9SliceCenter", d: getSvgPathForSlice(startAngle, centerSliceSize), ref: function (centerSliceBackground) { return _this.centerSliceBackground =
                         centerSliceBackground; }}), 
-                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(sliceData[1].angle + 90 + (centerSliceSize / 2), 1)}))
+                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(startAngle + (centerSliceSize / 2), 1)}))
             ), 
             sliceData.map(function (slice) {
                 return React.createElement(Slice, {ref: function (sliceEl) { _this.children.push(sliceEl); }, key: slice.index, isT9: true, data: slice, comm: _this.props.comm});
@@ -463,7 +482,7 @@ var MainFace = (function (_super) {
                     React.createElement("div", {className: "verticalCenterer"}, 
                         React.createElement("div", {className: "centered"}, 
                             React.createElement("div", {id: "faceSlices"}, this.props.useT9 ?
-                                divideCircle(CIRCLE_DEGREES, 9)
+                                divideCircle(CIRCLE_DEGREES, SLICES)
                                     .map(function (slice, index, arr) {
                                     return React.createElement(T9Slice, {key: slice.index, data: slice, comm: _this.props.comm});
                                 })
