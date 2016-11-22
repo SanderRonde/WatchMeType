@@ -330,13 +330,7 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 	}
 	render() {
 		const symbols = T9Keymap[this.props.data.index + 1].length;
-		const prevLetters = (T9Arr as any).reduce((prev: number|string, current: string, index: number) => {
-			if (index < this.props.data.index) {
-				return (typeof prev === 'number' ? prev : prev.length) + current.length;
-			}
-			return (typeof prev === 'number' ? prev : 0);
-		});
-		console.log(prevLetters, this.props.data.index);
+		const prevLetters = T9Arr.slice(0, this.props.data.index).join('').length;
 		const sliceData = divideCircle(CIRCLE_DEGREES / SLICES, symbols).map((slice) => {
 			slice.angle += this.props.data.angle;
 			if (symbols > 3) {
@@ -348,7 +342,6 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 
 		const centerSliceSize = T9_SLICE_DEGREES - 1;
 		const startAngle = 3.75 + (this.props.data.index * 45);
-		console.log(startAngle);
 		
 		return (
 			<div className="T9SliceCont">

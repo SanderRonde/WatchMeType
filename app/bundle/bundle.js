@@ -416,13 +416,8 @@ var T9Slice = (function (_super) {
     T9Slice.prototype.render = function () {
         var _this = this;
         var symbols = T9Keymap[this.props.data.index + 1].length;
-        var prevLetters = T9Arr.reduce(function (prev, current, index) {
-            if (index < _this.props.data.index) {
-                return (typeof prev === 'number' ? prev : prev.length) + current.length;
-            }
-            return (typeof prev === 'number' ? prev : 0);
-        });
-        console.log(prevLetters, this.props.data.index);
+        var prevLetters = T9Arr.slice(0, this.props.data.index).join('').length;
+        console.log(prevLetters);
         var sliceData = divideCircle(CIRCLE_DEGREES / SLICES, symbols).map(function (slice) {
             slice.angle += _this.props.data.angle;
             if (symbols > 3) {
@@ -433,7 +428,7 @@ var T9Slice = (function (_super) {
         });
         var centerSliceSize = T9_SLICE_DEGREES - 1;
         var startAngle = 3.75 + (this.props.data.index * 45);
-        console.log(startAngle);
+        console.log(sliceData);
         return (React.createElement("div", {className: "T9SliceCont"}, 
             React.createElement("div", {className: "T9SliceBackground"}, 
                 React.createElement("svg", {viewBox: "0 0 300 300"}, 
