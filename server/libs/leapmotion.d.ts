@@ -264,6 +264,7 @@ declare module "leapjs" {
 
 	export class Controller {
 		new(options: LoopOptions);
+		constructor(options: LoopOptions);
 		frameEventName: 'animationFrame'|'deviceFrame';
 		connect(): Controller;
 		connected(): boolean;
@@ -284,6 +285,7 @@ declare module "leapjs" {
 		stopUsing(pluginName: string): Controller;
 
 		on(eventName: ControllerEvent, callback: (param1?: any, param2?: any) => void): Controller;
+		on(eventName: 'animationFrame', callback: (frame: Frame) => void): Controller;
 		on(eventName: 'blur', callback: () => void): Controller;
 		on(eventName: 'connect', callback: () => void): Controller;
 		on(eventName: 'deviceAttached', callback: (device: Device) => void): Controller;

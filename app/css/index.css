@@ -1,8 +1,30 @@
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 400;
+	src: url(../fonts/Roboto-Regular.ttf);
+}
+
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 500;
+	src: url(../fonts/Roboto-Medium.ttf);
+}
+
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 700;
+	src: url(../fonts/Roboto-Bold.ttf);
+}
+
 html, body {
 	margin: 0;
 	border: 0;
 	padding: 0;
 	overflow: hidden;
+    font-family: 'Roboto';
 }
 
 #mainContainer {
@@ -12,7 +34,6 @@ html, body {
 	overflow: hidden;
 	color: white;
 	font-size: 3.4vmin;
-	font-family: 'Roboto';
 	pointer-events: none;
 }
 
