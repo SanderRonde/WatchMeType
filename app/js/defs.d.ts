@@ -89,7 +89,9 @@ declare const enum SymbolCommType {
 declare const enum Gesture {
 	none = 0,
 	clear = 1,
-	space = 2
+	space = 2,
+	cycleT9Up = 3,
+	cycleT9Down = 4
 }
 
 declare const enum MainFaceCommType {

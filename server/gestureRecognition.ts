@@ -65,10 +65,19 @@ export default function recognize(frame: Leap.Frame): Gesture {
 			//Determine the general direction the movement was in
 			const cone = get3DCone(vector);
 
-			if (cone === Cone.Left) {
-				returnVal = Gesture.clear;
-			} else if (cone === Cone.Bottom) {
-				returnVal = Gesture.space;
+			switch (cone) {
+				case Cone.Top:
+					returnVal = Gesture.cycleT9Up;
+					break;
+				case Cone.Right:
+					returnVal = Gesture.space;
+					break;
+				case Cone.Bottom:
+					returnVal = Gesture.cycleT9Down;
+					break;
+				case Cone.Left:
+					returnVal = Gesture.clear;
+					break;
 			}
 		}
 	});

@@ -78,8 +78,8 @@ html, body {
 #mainText {
 	font-size: 4vmin;
 	line-height: 4vmin;
-	width: 45vmin;
-	height: 32vmin;
+	width: 64vmin;
+	height: 34vmin;
 	word-break: break-all;
 	border-bottom: 1px solid white;
 	overflow-y: auto;

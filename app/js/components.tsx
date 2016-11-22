@@ -343,14 +343,14 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 	}
 }
 
-function predictNumString(t9Lib: T9Defs, numstring: string): string {
-	const res = t9Lib.predict(numstring)[0];
-	if (res) {
+function predictNumString(t9Lib: T9Defs, numstring: string): Array<string> {
+	const res = t9Lib.predict(numstring);
+	if (res && res.length > 0) {
 		return res;
 	}
-	return numstring.split('').map((num) => {
+	return [numstring.split('').map((num) => {
 		return T9Keymap[num][0];
-	}).join('');
+	}).join('')];
 }
 
 class WatchScreen extends React.Component<any, any> {
@@ -363,6 +363,7 @@ class WatchScreen extends React.Component<any, any> {
 		useT9: boolean;
 		t9Lib: T9Defs;
 	};
+	suggestions: Array<string>;
 	upperCase: boolean = false;
 	symbols: boolean = false;
 	mainTextCont: HTMLElement;
@@ -370,6 +371,7 @@ class WatchScreen extends React.Component<any, any> {
 	symbolButton: HTMLElement;
 	backspaceButton: HTMLElement;
 	spacebarButton: HTMLElement;
+	cycleButton: HTMLElement;
 
 	constructor(props: {
 			comm: CommHandlers
@@ -382,17 +384,19 @@ class WatchScreen extends React.Component<any, any> {
 					switch (data as Gesture) {
 						case Gesture.clear:
 							this.deleteChar();
-							this.backspaceButton.classList.add('active');
-							window.setTimeout(() => {
-								this.backspaceButton.classList.remove('active');
-							}, 100);
+							this._flashElement(this.backspaceButton);
 							break;
 						case Gesture.space:
 							this.addSpace();
-							this.spacebarButton.classList.add('active');
-							window.setTimeout(() => {
-								this.spacebarButton.classList.remove('active');
-							}, 100);
+							this._flashElement(this.spacebarButton);
+							break;
+						case Gesture.cycleT9Up:
+							this.cycleT9(true);
+							this._flashElement(this.cycleButton);
+							break;
+						case Gesture.cycleT9Down:
+							this.cycleT9();
+							this._flashElement(this.cycleButton);
 							break;
 					}
 					break;
@@ -405,6 +409,14 @@ class WatchScreen extends React.Component<any, any> {
 			}
 		});
 	}
+
+	_flashElement(element: HTMLElement) {
+		element.classList.add('active');
+		window.setTimeout(() => {
+			element.classList.remove('active');
+		}, 100);
+	}
+
 	addChar(char: string) {
 		this.state = this.state || {
 			currentText: ''
@@ -435,15 +447,17 @@ class WatchScreen extends React.Component<any, any> {
 		const newNums = this.state.currentNums + num;
 		const oldString = this.state.currentText;
 		const oldStringSplit = oldString.split(' ');
-		oldStringSplit[oldStringSplit.length - 1] = predictNumString(
+
+		this.suggestions = predictNumString(
 			this.props.t9Lib, newNums.split(' ').pop());
+		oldStringSplit[oldStringSplit.length - 1] = this.suggestions[0];
 
 		this.setState({
 			currentNums: newNums,
 			currentText: newNums.split(' ').map((numstring) => {
-				return predictNumString(this.props.t9Lib, numstring);
+				return predictNumString(this.props.t9Lib, numstring)[0];
 			}).join(' ')
-		})
+		});
 
 		if (wasScrolledToBottom) {
 			window.setTimeout(() => {
@@ -467,11 +481,13 @@ class WatchScreen extends React.Component<any, any> {
 			const textSplit = this.state.currentText.split(' ');
 			const newNums = this.state.currentNums.slice(0, -1);
 
+			this.suggestions = predictNumString(this.props.t9Lib, newNums.split(' ').pop());
+
 			newState = {
 				currentNums: newNums,
 				currentText: newNums.split(' ').map((numstring, index, arr) => {
 					if (index === arr.length - 1) {
-						return predictNumString(this.props.t9Lib, numstring);
+						return predictNumString(this.props.t9Lib, numstring)[0];
 					} else {
 						return textSplit[index];
 					}
@@ -507,6 +523,16 @@ class WatchScreen extends React.Component<any, any> {
 		this.props.comm._symbolListeners.forEach((symbolListener) => {
 			symbolListener.listener(SymbolCommType.updateTextType, 
 				[this.upperCase, this.symbols]);
+		});
+	}
+	cycleT9(reverse = false) {
+		this.setState({
+			currentNums: this.state.currentNums,
+			currentText: this.state.currentText.split(' ').slice(0, -1).concat(
+				this.suggestions[
+					(this.suggestions.indexOf(this.state.currentText.split(' ').pop()) +
+						(reverse ? -1 : 1)) % this.suggestions.length]
+			).join(' ')
 		});
 	}
 	render(this) {
@@ -549,6 +575,14 @@ class WatchScreen extends React.Component<any, any> {
 						onClick={this.toggleSymbols.bind(this)}
 						ref={(symbolButton) => this.symbolButton = symbolButton}>
 						<div className="textSymbol">123</div>
+					</div>
+					<div className="textButton" id="cycleButton"
+						onClick={this.cycleT9.bind(this)}
+						ref={(cycleButton) => this.cycleButton = cycleButton}>
+						<svg height="48" viewBox="0 0 24 24" width="48" xmlns="http://www.w3.org/2000/svg">
+							<path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/>
+							<path d="M0 0h24v24H0z" fill="none"/>
+						</svg>
 					</div>
 					<div className="textButton" id="spacebarButton"
 						onClick={this.addSpace.bind(this)}

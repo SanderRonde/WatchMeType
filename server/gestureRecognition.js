@@ -48,11 +48,19 @@ function recognize(frame) {
             trimTrackedGestures();
             var vector = formatVector(gesture.direction);
             var cone = get3DCone(vector);
-            if (cone === Cone.Left) {
-                returnVal = 1;
-            }
-            else if (cone === Cone.Bottom) {
-                returnVal = 2;
+            switch (cone) {
+                case Cone.Top:
+                    returnVal = 3;
+                    break;
+                case Cone.Right:
+                    returnVal = 2;
+                    break;
+                case Cone.Bottom:
+                    returnVal = 4;
+                    break;
+                case Cone.Left:
+                    returnVal = 1;
+                    break;
             }
         }
     });

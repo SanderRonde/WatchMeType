@@ -75,30 +75,37 @@ var comm = {
     fireSymbolListeners: function (pos) {
         var gestureAngle = Math.atan2(pos.y - constants.get('HALF_WINDOW_HEIGHT'), pos.x - constants.get('HALF_WINDOW_WIDTH')) * 180 / Math.PI;
         if (gestureAngle < 0) {
-            gestureAngle = 360 + gestureAngle;
+            gestureAngle += 360;
+            ;
         }
-        gestureAngle += 90;
-        gestureAngle = gestureAngle % 360;
+        gestureAngle = (gestureAngle + 90) % 360;
         var radius = radiusFromCenter(pos);
         if (radius >= symbolRadius * (constants.get('GLOW_START_RADIUS_PERCENTAGE') / 100)) {
             var maxGlowIntensity_1 = getGlowIntensity(symbolRadius, radius);
             if (USET9) {
-                gestureAngle += (360 / 26);
+                gestureAngle = (gestureAngle + (360 / 26)) % 360;
                 if (maxGlowIntensity_1 >= constants.get('KEY_PRESSED_MIN_DISTANCE') * 0.8 && cursorReset) {
                     var toggledIndex = comm._symbolListeners.length - 1;
                     var lastSlice = 0;
+                    var broke = false;
                     for (var i = 0; i < comm._symbolListeners.length; i++) {
                         if (comm._symbolListeners[i].element.elName === 'T9Slice') {
                             if (gestureAngle < comm._symbolListeners[i].angle) {
                                 toggledIndex = lastSlice;
+                                broke = true;
                                 break;
                             }
                             lastSlice = i;
                         }
                     }
+                    if (!broke) {
+                        toggledIndex = lastSlice;
+                    }
                     comm._symbolListeners[toggledIndex].listener(1);
                     cursorReset = false;
-                    comm.fireMainFaceListener(2, comm._symbolListeners[toggledIndex].element
+                    console.log(comm._symbolListeners[toggledIndex].element
+                        .props.data.index + 1);
+                    comm.fireMainFaceListener(2, +comm._symbolListeners[toggledIndex].element
                         .props.data.index + 1);
                 }
             }

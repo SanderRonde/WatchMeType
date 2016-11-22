@@ -427,13 +427,13 @@ var T9Slice = (function (_super) {
     return T9Slice;
 }(React.Component));
 function predictNumString(t9Lib, numstring) {
-    var res = t9Lib.predict(numstring)[0];
-    if (res) {
+    var res = t9Lib.predict(numstring);
+    if (res && res.length > 0) {
         return res;
     }
-    return numstring.split('').map(function (num) {
-        return T9Keymap[num][0];
-    }).join('');
+    return [numstring.split('').map(function (num) {
+            return T9Keymap[num][0];
+        }).join('')];
 }
 var WatchScreen = (function (_super) {
     __extends(WatchScreen, _super);
@@ -448,17 +448,19 @@ var WatchScreen = (function (_super) {
                     switch (data) {
                         case 1:
                             _this.deleteChar();
-                            _this.backspaceButton.classList.add('active');
-                            window.setTimeout(function () {
-                                _this.backspaceButton.classList.remove('active');
-                            }, 100);
+                            _this._flashElement(_this.backspaceButton);
                             break;
                         case 2:
                             _this.addSpace();
-                            _this.spacebarButton.classList.add('active');
-                            window.setTimeout(function () {
-                                _this.spacebarButton.classList.remove('active');
-                            }, 100);
+                            _this._flashElement(_this.spacebarButton);
+                            break;
+                        case 3:
+                            _this.cycleT9(true);
+                            _this._flashElement(_this.cycleButton);
+                            break;
+                        case 4:
+                            _this.cycleT9();
+                            _this._flashElement(_this.cycleButton);
                             break;
                     }
                     break;
@@ -471,6 +473,12 @@ var WatchScreen = (function (_super) {
             }
         });
     }
+    WatchScreen.prototype._flashElement = function (element) {
+        element.classList.add('active');
+        window.setTimeout(function () {
+            element.classList.remove('active');
+        }, 100);
+    };
     WatchScreen.prototype.addChar = function (char) {
         var _this = this;
         this.state = this.state || {
@@ -498,11 +506,12 @@ var WatchScreen = (function (_super) {
         var newNums = this.state.currentNums + num;
         var oldString = this.state.currentText;
         var oldStringSplit = oldString.split(' ');
-        oldStringSplit[oldStringSplit.length - 1] = predictNumString(this.props.t9Lib, newNums.split(' ').pop());
+        this.suggestions = predictNumString(this.props.t9Lib, newNums.split(' ').pop());
+        oldStringSplit[oldStringSplit.length - 1] = this.suggestions[0];
         this.setState({
             currentNums: newNums,
             currentText: newNums.split(' ').map(function (numstring) {
-                return predictNumString(_this.props.t9Lib, numstring);
+                return predictNumString(_this.props.t9Lib, numstring)[0];
             }).join(' ')
         });
         if (wasScrolledToBottom) {
@@ -527,11 +536,12 @@ var WatchScreen = (function (_super) {
         if (this.props.useT9) {
             var textSplit_1 = this.state.currentText.split(' ');
             var newNums = this.state.currentNums.slice(0, -1);
+            this.suggestions = predictNumString(this.props.t9Lib, newNums.split(' ').pop());
             newState = {
                 currentNums: newNums,
                 currentText: newNums.split(' ').map(function (numstring, index, arr) {
                     if (index === arr.length - 1) {
-                        return predictNumString(_this.props.t9Lib, numstring);
+                        return predictNumString(_this.props.t9Lib, numstring)[0];
                     }
                     else {
                         return textSplit_1[index];
@@ -569,6 +579,14 @@ var WatchScreen = (function (_super) {
             symbolListener.listener(2, [_this.upperCase, _this.symbols]);
         });
     };
+    WatchScreen.prototype.cycleT9 = function (reverse) {
+        if (reverse === void 0) { reverse = false; }
+        this.setState({
+            currentNums: this.state.currentNums,
+            currentText: this.state.currentText.split(' ').slice(0, -1).concat(this.suggestions[(this.suggestions.indexOf(this.state.currentText.split(' ').pop()) +
+                (reverse ? -1 : 1)) % this.suggestions.length]).join(' ')
+        });
+    };
     WatchScreen.prototype.render = function () {
         var _this = this;
         return (React.createElement("div", {id: "mainScreen"}, 
@@ -596,6 +614,11 @@ var WatchScreen = (function (_super) {
                 ), 
                 React.createElement("div", {className: "textButton", id: "symbolsButton", onClick: this.toggleSymbols.bind(this), ref: function (symbolButton) { return _this.symbolButton = symbolButton; }}, 
                     React.createElement("div", {className: "textSymbol"}, "123")
+                ), 
+                React.createElement("div", {className: "textButton", id: "cycleButton", onClick: this.cycleT9.bind(this), ref: function (cycleButton) { return _this.cycleButton = cycleButton; }}, 
+                    React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
+                        React.createElement("path", {d: "M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"}), 
+                        React.createElement("path", {d: "M0 0h24v24H0z", fill: "none"}))
                 ), 
                 React.createElement("div", {className: "textButton", id: "spacebarButton", onClick: this.addSpace.bind(this), ref: function (spacebarButton) { return _this.spacebarButton = spacebarButton; }}, 
                     React.createElement("svg", {height: "56", viewBox: "0 0 24 24", width: "56", xmlns: "http://www.w3.org/2000/svg"}, 
@@ -764,30 +787,37 @@ var comm = {
     fireSymbolListeners: function (pos) {
         var gestureAngle = Math.atan2(pos.y - constants.get('HALF_WINDOW_HEIGHT'), pos.x - constants.get('HALF_WINDOW_WIDTH')) * 180 / Math.PI;
         if (gestureAngle < 0) {
-            gestureAngle = 360 + gestureAngle;
+            gestureAngle += 360;
+            ;
         }
-        gestureAngle += 90;
-        gestureAngle = gestureAngle % 360;
+        gestureAngle = (gestureAngle + 90) % 360;
         var radius = radiusFromCenter(pos);
         if (radius >= symbolRadius * (constants.get('GLOW_START_RADIUS_PERCENTAGE') / 100)) {
             var maxGlowIntensity_1 = getGlowIntensity(symbolRadius, radius);
             if (USET9) {
-                gestureAngle += (360 / 26);
+                gestureAngle = (gestureAngle + (360 / 26)) % 360;
                 if (maxGlowIntensity_1 >= constants.get('KEY_PRESSED_MIN_DISTANCE') * 0.8 && cursorReset) {
                     var toggledIndex = comm._symbolListeners.length - 1;
                     var lastSlice = 0;
+                    var broke = false;
                     for (var i = 0; i < comm._symbolListeners.length; i++) {
                         if (comm._symbolListeners[i].element.elName === 'T9Slice') {
                             if (gestureAngle < comm._symbolListeners[i].angle) {
                                 toggledIndex = lastSlice;
+                                broke = true;
                                 break;
                             }
                             lastSlice = i;
                         }
                     }
+                    if (!broke) {
+                        toggledIndex = lastSlice;
+                    }
                     comm._symbolListeners[toggledIndex].listener(1);
                     cursorReset = false;
-                    comm.fireMainFaceListener(2, comm._symbolListeners[toggledIndex].element
+                    console.log(comm._symbolListeners[toggledIndex].element
+                        .props.data.index + 1);
+                    comm.fireMainFaceListener(2, +comm._symbolListeners[toggledIndex].element
                         .props.data.index + 1);
                 }
             }
