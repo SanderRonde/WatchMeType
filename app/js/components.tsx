@@ -313,9 +313,10 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 	constructor(props: T9SliceProps) {
 		super(props);
 
-		props.comm.addSymbolListener(this.props.data.angle + 90, this, (type) => {
+		props.comm.addSymbolListener(this.props.data.angle + 90, this, (type, data) => {
 			switch (type) {
 				case SymbolCommType.fired:
+					debugger;
 					this.centerSliceBackground.classList.add('toggled');
 					if (this.colorTimeout) {
 						window.clearTimeout(this.colorTimeout);

@@ -3,8 +3,9 @@ var React = require('react');
 var ReactDOM = require('react-dom');
 var components = require('./components');
 var constants = require('./constants');
+var util = require('./util');
 window['constants'] = constants;
-var t9 = require('./t9.js');
+var t9 = require('./libs/t9.js');
 var hashSplit = window.location.hash.slice(1).split('-').map(function (option) {
     return option.toLowerCase();
 });
@@ -80,7 +81,7 @@ var comm = {
         }
         gestureAngle = (gestureAngle + 90) % 360;
         var radius = radiusFromCenter(pos);
-        if (radius >= symbolRadius * (constants.get('GLOW_START_RADIUS_PERCENTAGE') / 100)) {
+        if (radius >= symbolRadius) {
             var maxGlowIntensity_1 = getGlowIntensity(symbolRadius, radius);
             if (USET9) {
                 gestureAngle = (gestureAngle + (360 / 26)) % 360;
@@ -101,10 +102,8 @@ var comm = {
                     if (!broke) {
                         toggledIndex = lastSlice;
                     }
-                    comm._symbolListeners[toggledIndex].listener(1);
+                    comm._symbolListeners[toggledIndex].listener(1, radius - symbolRadius);
                     cursorReset = false;
-                    console.log(comm._symbolListeners[toggledIndex].element
-                        .props.data.index + 1);
                     comm.fireMainFaceListener(2, +comm._symbolListeners[toggledIndex].element
                         .props.data.index + 1);
                 }
@@ -217,7 +216,7 @@ function finishLoading() {
         window.requestAnimationFrame(updatePointerPos);
     }, 500);
 }
-fetch("/resources/" + LANG + ".txt").then(function (res) {
+util.fetch("/resources/" + LANG + ".txt").then(function (res) {
     return res.text();
 }).then(function (text) {
     t9.init(text);

@@ -215,9 +215,10 @@ var T9Slice = (function (_super) {
         this.elName = 'T9Slice';
         this.colorTimeout = -1;
         this.children = [];
-        props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type) {
+        props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
             switch (type) {
                 case 1:
+                    debugger;
                     _this.centerSliceBackground.classList.add('toggled');
                     if (_this.colorTimeout) {
                         window.clearTimeout(_this.colorTimeout);

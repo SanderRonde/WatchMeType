@@ -6,10 +6,11 @@ import * as ReactDOM from 'react-dom';
 import * as components from './components';
 import * as Leap from 'leapjs';
 import * as constants from './constants';
+import * as util from './util'
 
 window['constants'] = constants;
 
-const t9: T9Defs = require('./t9.js');
+const t9: T9Defs = require('./libs/t9.js');
 
 const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
 	return option.toLowerCase();
@@ -24,7 +25,6 @@ if (!SHOWDOT) {
 if (DEBUG) {
 	console.log(`Using debug mode`);
 }
-
 
 const symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) *
 	0.45;
@@ -102,7 +102,7 @@ const comm: CommHandlers = {
 
 		const radius = radiusFromCenter(pos);
 
-		if (radius >= symbolRadius * (constants.get('GLOW_START_RADIUS_PERCENTAGE') / 100)) {
+		if (radius >= symbolRadius) {
 			const maxGlowIntensity = getGlowIntensity(symbolRadius, radius);
 
 			if (USET9) {
@@ -126,11 +126,9 @@ const comm: CommHandlers = {
 						toggledIndex = lastSlice;
 					}
 
-					comm._symbolListeners[toggledIndex].listener(SymbolCommType.fired);
+					comm._symbolListeners[toggledIndex].listener(SymbolCommType.fired, radius - symbolRadius);
 					cursorReset = false;
 
-					console.log((comm._symbolListeners[toggledIndex].element as T9SliceElement)
-							.props.data.index + 1);
 					comm.fireMainFaceListener(MainFaceCommType.T9KeyPressed,+ 
 						(comm._symbolListeners[toggledIndex].element as T9SliceElement)
 							.props.data.index + 1);
@@ -267,7 +265,7 @@ function finishLoading() {
 	}, 500);
 }
 
-fetch(`/resources/${LANG}.txt`).then((res) => {
+util.fetch(`/resources/${LANG}.txt`).then((res) => {
 	return res.text();
 }).then((text) => {
 	t9.init(text);
