@@ -52,7 +52,7 @@ new Promise(function (resolve) {
     var lastPointable = null;
     var hasNoEvents = true;
     console.log('connecting to controller');
-    var controller = Leap.loop({
+    Leap.loop({
         background: true,
         optimizeHMD: false
     }, function (frame) {

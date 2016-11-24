@@ -1,5 +1,5 @@
 /// <reference path="../typings/index.d.ts" />
-/// <reference path="libs/leapmotion.d.ts" />
+/// <reference path="./libs/leapmotion.d.ts" />
 
 import * as fs from 'fs';
 import * as http from 'http';
@@ -35,7 +35,7 @@ new Promise((resolve) => {
 	router.use('/', express.static(path.join(__dirname, '../app'), {
 		maxAge: 60 * 60 * 24
 	}));
-	router.get('/', express)
+	router.get('/', express);
 
 	function reqHandler(req: http.IncomingMessage, res: http.ServerResponse) {
 		router(req, res, finalHandler(req, res));
@@ -61,14 +61,13 @@ new Promise((resolve) => {
 	});
 }).then((wsServer: websocket.server) => {
 	let lastPointable: string = null;
-	let hasNoEvents: boolean = true;
+	let hasNoEvents = true;
 
 	console.log('connecting to controller');
-	const controller = Leap.loop({
+	Leap.loop({
 		background: true,
 		optimizeHMD: false
 	}, (frame) => {
-		//console.log('recieved frame', Date.now());
 		if (wsServer.connections.length === 0) {
 			return;
 		}

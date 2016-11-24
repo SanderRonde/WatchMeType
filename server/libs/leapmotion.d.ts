@@ -4,10 +4,10 @@ interface LeapNoPointer {
 }
 
 interface LeapPointerData {
-	foundPointer: true;
 	direction: VectorArr,
 	stabilizedTipPosition: VectorArr;
 	gesture?: Gesture;
+	foundPointer: true;
 }
 
 type WSData = LeapNoPointer|LeapPointerData;
@@ -128,7 +128,7 @@ declare namespace LeapJS {
 		length: number;
 		nextJoint: Array<number>;
 		prevJoint: Array<number>;
-		type: BoneType
+		type: BoneType;
 		width: number;
 		center(): VectorArr;
 		direction(): VectorArr;
@@ -139,7 +139,7 @@ declare namespace LeapJS {
 			[number, number, number, number],
 			[number, number, number, number],
 			[number, number, number, number]
-		]
+		];
 	}
 
 	export const enum FingerName {
@@ -161,7 +161,7 @@ declare namespace LeapJS {
 		metacarpal: Bone;
 		pipPosition: VectorArr;
 		proximal: Bone;
-		type: FingerName
+		type: FingerName;
 	}
 
 	export interface Hand {
