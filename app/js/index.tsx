@@ -96,7 +96,6 @@ const comm: CommHandlers = {
 		}
 		if (selectingT9LetterAngle !== -1) {
 			//Cancel if needed
-			console.log(radius, symbolRadius, gestureAngle, selectingT9LetterAngle);
 			if (radius >= symbolRadius &&
 				Math.abs(gestureAngle - selectingT9LetterAngle) <=
 					CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE) {

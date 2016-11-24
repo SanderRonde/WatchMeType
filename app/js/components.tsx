@@ -163,7 +163,8 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 	}
 
 	constructor(props: {
-		comm: CommHandlers
+		comm: CommHandlers;
+		isBig?: boolean;
 	}) {
 		super(props);
 
@@ -171,7 +172,7 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 		this.state.isCapitalized = false;
 		this.state.isTextSymbol = false;
 
-		props.comm && props.comm.addSymbolListener(this.props.data.angle + 90, this, (type, data) => {
+		props.isBig || props.comm.addSymbolListener(this.props.data.angle + 90, this, (type, data) => {
 			switch (type) {
 				case SymbolCommType.intensityUpdate:
 					if (data < 0 || data !== this.opacity) {
@@ -595,13 +596,21 @@ class WatchScreen extends React.Component<any, any> {
 		});
 	}
 	cycleT9(reverse = false) {
+		if (this.suggestions.length <= 1) {
+			//No point in cycling through a one-length array
+			return;
+		}
 		this.setState({
 			currentNums: this.state.currentNums,
-			currentText: this.state.currentText.split(' ').slice(0, -1).concat(
-				this.suggestions[
-					(this.suggestions.indexOf(this.state.currentText.split(' ').pop()) +
-						(reverse ? -1 : 1)) % this.suggestions.length]
-			).join(' ')
+			//First slice off the last X characters, where X is equal to the 
+			//length of the last "word" using splitNumString
+			currentText: this.state.currentText.slice(0, 
+				-splitNumString(this.state.currentNums).pop().arr.length) +
+					//Then append the next or previous suggestion modulo the length
+					//to prevent overflows
+					this.suggestions[
+						(this.suggestions.indexOf(this.state.currentText) +
+							(reverse ? -1 : 1)) % this.suggestions.length]
 		});
 	}
 	render(this) {

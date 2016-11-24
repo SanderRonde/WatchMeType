@@ -295,7 +295,7 @@ var Symbol = (function (_super) {
         this.state = this.state || {};
         this.state.isCapitalized = false;
         this.state.isTextSymbol = false;
-        props.comm && props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
+        props.isBig || props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
             switch (type) {
                 case 0:
                     if (data < 0 || data !== _this.opacity) {
@@ -626,10 +626,14 @@ var WatchScreen = (function (_super) {
     };
     WatchScreen.prototype.cycleT9 = function (reverse) {
         if (reverse === void 0) { reverse = false; }
+        if (this.suggestions.length <= 1) {
+            return;
+        }
         this.setState({
             currentNums: this.state.currentNums,
-            currentText: this.state.currentText.split(' ').slice(0, -1).concat(this.suggestions[(this.suggestions.indexOf(this.state.currentText.split(' ').pop()) +
-                (reverse ? -1 : 1)) % this.suggestions.length]).join(' ')
+            currentText: this.state.currentText.slice(0, -splitNumString(this.state.currentNums).pop().arr.length) +
+                this.suggestions[(this.suggestions.indexOf(this.state.currentText) +
+                    (reverse ? -1 : 1)) % this.suggestions.length]
         });
     };
     WatchScreen.prototype.render = function () {
@@ -836,7 +840,6 @@ var comm = {
             }
         }
         if (selectingT9LetterAngle !== -1) {
-            console.log(radius, symbolRadius, gestureAngle, selectingT9LetterAngle);
             if (radius >= symbolRadius &&
                 Math.abs(gestureAngle - selectingT9LetterAngle) <=
                     CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE) {
