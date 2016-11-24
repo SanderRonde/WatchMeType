@@ -6,16 +6,16 @@ import * as http from 'http';
 import * as path from 'path';
 import * as express from 'express';
 import * as websocket from 'websocket';
-import * as Leap from 'leapjs';
 import recognizeGesture from './gestureRecognition';
 const WebSocketServer = websocket.server;
 const Router = require('router');
 const finalHandler = require('finalhandler');
+const Leap: typeof LeapJS = require('./libs/leapjs');
 
 const PORT = 1234;
 
-function getFinger(frame: Leap.Frame, order: Array<Leap.FingerName>
-	): Leap.Pointable {
+function getFinger(frame: LeapJS.Frame, order: Array<LeapJS.FingerName>
+	): LeapJS.Pointable {
 		const pointables = frame.pointables;
 		let index = 0;
 		let lastPointable = null;
@@ -84,7 +84,7 @@ new Promise((resolve) => {
 				message.foundPointer = false;
 		} else {
 			message.foundPointer = true;
-			let pointable: Leap.Pointable;
+			let pointable: LeapJS.Pointable;
 			if (lastPointable && frame.pointable(lastPointable) &&
 				frame.pointable(lastPointable).valid &&
 				frame.finger(lastPointable).extended) {

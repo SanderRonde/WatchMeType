@@ -16,8 +16,7 @@ type XYZ<T> = [T, T, T];
 
 type VectorArr = XYZ<number>;
 
-declare module "leapjs" {
-
+declare namespace LeapJS {
 	export interface LoopOptions {
 		/**
 		 * The host name or IP address of the WebSocket server providing Leap Motion
