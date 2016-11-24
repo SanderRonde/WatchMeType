@@ -444,6 +444,9 @@ var T9Slice = (function (_super) {
     return T9Slice;
 }(React.Component));
 function splitNumString(numstring) {
+    if (numstring.length === 0) {
+        return [];
+    }
     var prevType = numstring[0].type;
     var arr = [{
             type: prevType,
@@ -454,6 +457,7 @@ function splitNumString(numstring) {
             arr[arr.length - 1].arr.push(numstring[i].data);
         }
         else {
+            prevType = numstring[i].type;
             arr.push({
                 type: numstring[i].type,
                 arr: [numstring[i].data]
@@ -463,11 +467,15 @@ function splitNumString(numstring) {
     return arr;
 }
 function predictNumString(t9Lib, numstring) {
-    if (numstring.type === 'T9') {
+    var isCaps = numstring.type === 'T9Caps';
+    if (numstring.type === 'T9' || isCaps) {
         var predicted = t9Lib.predict(numstring.arr.join(''));
         if (predicted && predicted.length > 0) {
-            return predicted;
+            return isCaps ? predicted.map(function (str) { return str.toUpperCase(); }) : predicted;
         }
+        return [numstring.arr.map(function (num) {
+                return isCaps ? T9Arr[num - 1][0].toUpperCase() : T9Arr[num - 1][0];
+            }).join('')];
     }
     return [numstring.arr.join('')];
 }
@@ -551,12 +559,23 @@ var WatchScreen = (function (_super) {
             currentNums: [],
             currentText: ''
         };
+        var lastChar = this.state.currentNums.slice(-1)[0];
+        if (num === ' ' && lastChar.type === 'char' && lastChar.data === ' ') {
+            this.state.currentNums[this.state.currentNums.length - 1].data = '.';
+            this.state.currentText = this.state.currentText.slice(0, -1) + '.';
+        }
         var wasScrolledToBottom = this.mainTextCont.scrollTop ===
             this.mainTextCont.scrollHeight;
         var addedObj = {};
         if (isCaps || isSymbol || typeof num === 'string') {
-            addedObj.type = 'char';
-            addedObj.data = typeof num === 'number' ? getSymbol(num * 3).value : num;
+            if (isCaps && !isSymbol) {
+                addedObj.type = 'T9Caps';
+                addedObj.data = num;
+            }
+            else {
+                addedObj.type = 'char';
+                addedObj.data = typeof num === 'number' ? getSymbol(num * 3).value : num;
+            }
         }
         else {
             addedObj.type = 'T9';
@@ -567,6 +586,7 @@ var WatchScreen = (function (_super) {
         var oldStringSplit = oldString.split(' ');
         this.suggestions = predictNumString(this.props.t9Lib, splitNumString(newNums).pop());
         oldStringSplit[oldStringSplit.length - 1] = this.suggestions[0];
+        console.log(splitNumString(newNums));
         this.setState({
             currentNums: newNums,
             currentText: splitNumString(newNums).map(function (numstring) {
@@ -589,17 +609,17 @@ var WatchScreen = (function (_super) {
             currentText: '',
             currentNums: []
         };
-        var newState;
         var textSplit = this.state.currentText.split(' ');
         var newNums = this.state.currentNums.slice(0, -1);
-        this.suggestions = predictNumString(this.props.t9Lib, splitNumString(newNums).pop());
-        newState = {
+        var isEmpty = newNums.length === 0;
+        this.suggestions = isEmpty ? [''] :
+            predictNumString(this.props.t9Lib, splitNumString(newNums).pop());
+        this.setState({
             currentNums: newNums,
-            currentText: splitNumString(newNums).map(function (numstring) {
+            currentText: isEmpty ? '' : splitNumString(newNums).map(function (numstring) {
                 return predictNumString(_this.props.t9Lib, numstring)[0];
             }).join('')
-        };
-        this.setState(newState);
+        });
     };
     WatchScreen.prototype.sendPress = function () {
         this.props.comm.sendMessageToController(0, this.state.currentText);
@@ -626,6 +646,9 @@ var WatchScreen = (function (_super) {
     };
     WatchScreen.prototype.cycleT9 = function (reverse) {
         if (reverse === void 0) { reverse = false; }
+        if (typeof reverse !== 'boolean') {
+            reverse = false;
+        }
         if (this.suggestions.length <= 1) {
             return;
         }
@@ -636,19 +659,59 @@ var WatchScreen = (function (_super) {
                     (reverse ? -1 : 1)) % this.suggestions.length]
         });
     };
+    WatchScreen.prototype._splitIntoWords = function (string) {
+        var words = [];
+        for (var i = 0; i < string.length; i++) {
+            var lastWord = words[words.length - 1] || { type: 'nothing' };
+            if (string.charCodeAt(i) >= 97 && string.charCodeAt(i) <= 122) {
+                if (lastWord.type === 'word') {
+                    lastWord.str += string[i];
+                }
+                else {
+                    words.push({
+                        type: 'word',
+                        str: string[i]
+                    });
+                }
+            }
+            else if (string.charCodeAt(i) >= 65 && string.charCodeAt(i) <= 90) {
+                if (lastWord.type === 'caps-word') {
+                    lastWord.str += string[i];
+                }
+                else {
+                    words.push({
+                        type: 'caps-word',
+                        str: string[i]
+                    });
+                }
+            }
+            else {
+                if (lastWord.type === 'non-word') {
+                    lastWord.str += string[i];
+                }
+                else {
+                    words.push({
+                        type: 'non-word',
+                        str: string[i]
+                    });
+                }
+            }
+        }
+        return words;
+    };
     WatchScreen.prototype.render = function () {
         var _this = this;
         return (React.createElement("div", {id: "mainScreen"}, 
-            React.createElement("div", {id: "mainText", ref: function (mainText) { return _this.mainTextCont = mainText; }}, (this.state && this.state.currentText || '').split(' ')
+            React.createElement("div", {id: "mainText", ref: function (mainText) { return _this.mainTextCont = mainText; }}, this._splitIntoWords(this.state && this.state.currentText || '')
                 .map(function (word, index, arr) {
                 var styles = {};
-                if (index === arr.length - 1) {
+                if (index === arr.length - 1 && word.type !== 'non-word') {
                     styles.textDecoration = 'underline';
-                    return React.createElement("span", {key: index, className: "mainTextWord", style: styles}, word);
+                    return React.createElement("span", {key: index, className: "mainTextWord", style: styles}, word.str);
                 }
                 return (React.createElement("span", {key: index, className: "mainTextGroupCont"}, 
-                    React.createElement("span", {className: "mainTextWord", style: styles}, word), 
-                    React.createElement("span", {className: "mainTextSpace"}, ' ')));
+                    React.createElement("span", {className: "mainTextWord", style: styles}, word.str)
+                ));
             })), 
             React.createElement("div", {id: "textButtons"}, 
                 React.createElement("div", {className: "textButton", id: "backspaceButton", onClick: this.deleteChar.bind(this), ref: function (backspaceButton) { return _this.backspaceButton = backspaceButton; }}, 
