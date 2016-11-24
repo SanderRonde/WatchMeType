@@ -473,6 +473,7 @@ var WatchScreen = (function (_super) {
             currentNums: this.state.currentNums,
             currentText: this.state.currentText.slice(0, -splitNumString(this.state.currentNums).pop().arr.length) +
                 this.suggestions[(this.suggestions.indexOf(this.state.currentText) +
+                    this.suggestions.length +
                     (reverse ? -1 : 1)) % this.suggestions.length]
         });
     };

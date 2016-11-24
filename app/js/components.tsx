@@ -627,6 +627,7 @@ class WatchScreen extends React.Component<any, any> {
 			//No point in cycling through a one-length array
 			return;
 		}
+
 		this.setState({
 			currentNums: this.state.currentNums,
 			//First slice off the last X characters, where X is equal to the 
@@ -637,6 +638,7 @@ class WatchScreen extends React.Component<any, any> {
 					//to prevent overflows
 					this.suggestions[
 						(this.suggestions.indexOf(this.state.currentText) +
+							this.suggestions.length +
 							(reverse ? -1 : 1)) % this.suggestions.length]
 		});
 	}
