@@ -4,7 +4,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as components from './components';
-import * as Leap from 'leapjs';
 import * as util from './util'
 
 const KEY_PRESSED_MIN_DISTANCE = 90;
