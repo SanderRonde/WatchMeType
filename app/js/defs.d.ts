@@ -48,9 +48,12 @@ interface SymbolElement {
 		data: {
 			angle: number;
 			index: number;
-		}
+		};
+		isBig?: boolean;
 	}
 	elName: 'Symbol';
+
+	onMouseOver(): void;
 
 	constructor: Function;
 	render(): JSX.Element;
@@ -71,8 +74,7 @@ interface T9SliceElement {
 			angle: number;
 		}
 	};
-	centerSliceBackground: SVGElement;
-	colorTimeout: number;
+	centerSliceBackground: HTMLElement;
 	children: Array<SliceElement>;
 	elName: 'T9Slice';
 
@@ -97,7 +99,8 @@ declare const enum Gesture {
 declare const enum MainFaceCommType {
 	keyPressed = 0,
 	gesture = 1,
-	T9KeyPressed = 2
+	T9KeyPressed = 2,
+	resetSlices = 3
 } 
 
 declare const enum ControllerCommType {
@@ -117,7 +120,7 @@ interface PosListenerData {
 	listener: PosListener;
 }
 
-type MainFaceListener = (type: MainFaceCommType, data: string|Gesture) => void; 
+type MainFaceListener = (type: MainFaceCommType, data?: string|Gesture) => void; 
 
 interface CommHandlers {
 	_symbolListeners: Array<PosListenerData>;
@@ -131,4 +134,5 @@ interface CommHandlers {
 		data: Gesture|string|number): void;
 
 	sendMessageToController(type: ControllerCommType, data: string): void;
+	symbolHover(symbol: string|number): void;
 }

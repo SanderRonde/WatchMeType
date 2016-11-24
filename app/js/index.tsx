@@ -5,10 +5,16 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as components from './components';
 import * as Leap from 'leapjs';
-import * as constants from './constants';
 import * as util from './util'
 
-window['constants'] = constants;
+const KEY_PRESSED_MIN_DISTANCE = 90;
+const KEY_PRESSED_MAX_ANGLE_DIFF = 10;
+const FINGER_ADJUSTMENT = 1.4;
+const VMIN = Math.min(window.innerWidth, window.innerHeight) / 100;
+const HALF_WINDOW_WIDTH = window.innerWidth / 2;
+const HALF_WINDOW_HEIGHT = window.innerHeight / 2;
+const CHOOSE_SYMBOL_ACTIVATION = 7
+const CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE = 40;
 
 const t9: T9Defs = require('./libs/t9.js');
 
@@ -16,7 +22,6 @@ const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
 	return option.toLowerCase();
 });
 const DEBUG = hashSplit.indexOf('d') > -1;
-const USET9 = hashSplit.indexOf('not9') === -1;
 const LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
 const SHOWDOT = hashSplit.indexOf('dot') > -1;
 if (!SHOWDOT) {
@@ -26,11 +31,12 @@ if (DEBUG) {
 	console.log(`Using debug mode`);
 }
 
-const symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) *
-	0.45;
+const symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) * 0.4;
 
-let isLoading = true;
-let cursorReset = true;
+let pressingKey: number = -1;
+let isLoading: boolean = true;
+let waitForReset: boolean = false;
+let selectingT9LetterAngle: number = -1;
 
 const pointer: PointerPosition = {
 	x: window.innerWidth / 2,
@@ -41,15 +47,10 @@ const lastPointerPos: PointerPosition = {
 	y: window.innerHeight / 2
 };
 
-function shouldFireListener(gestureAngle: number, 
-	listenerAngle: number): boolean {
-		return Math.abs(listenerAngle - listenerAngle) <= constants.get('GLOW_ANGLE');
-	}
-
 function radiusFromCenter(pos: PointerPosition): number {
 	const center = {
-		x: constants.get('HALF_WINDOW_WIDTH'),
-		y: constants.get('HALF_WINDOW_HEIGHT')
+		x: HALF_WINDOW_WIDTH,
+		y: HALF_WINDOW_HEIGHT
 	};
 
 	return Math.sqrt(
@@ -61,26 +62,10 @@ function getGlowIntensity(symbolRadius: number, radius: number): number {
 	return Math.pow((Math.min(radius / symbolRadius, 1) * 100), 2) / 100;
 }
 
-function getAngleDifference(angle1: number, angle2: number): number {
-	if (angle1 >= 360 - constants.get('GLOW_ANGLE') &&
-		angle2 <= constants.get('GLOW_ANGLE')) {
-			angle2 += 360;
-	} else if (angle2 >= 360 - constants.get('GLOW_ANGLE') &&
-		angle1 <= constants.get('GLOW_ANGLE')) {
-			angle1 += 360;
-		}
-	return Math.abs(angle1 - angle2);
-}
-
-function getAngleGlowIntensity(max: number, difference: number): number {
-	return (((constants.get('GLOW_ANGLE') - 
-		difference * constants.get('GLOW_ANGLE_FACTOR')) * max)
-		/ constants.get('GLOW_ANGLE')) || 0;
-}
-
-function keyPressed(glowIntensity: number, angleDifference: number): boolean {
-	return cursorReset && glowIntensity >= constants.get('KEY_PRESSED_MIN_DISTANCE') &&
-		angleDifference <= constants.get('KEY_PRESSED_MAX_ANGLE_DIFF');
+function enterChooseSymbolMode(chars: Array<number|string>, angle: number) {
+	selectingT9LetterAngle = angle;
+	waitForReset = true;
+	chooseSymbolOverlay.addSymbols(chars, angle);
 }
 
 const comm: CommHandlers = {
@@ -93,74 +78,80 @@ const comm: CommHandlers = {
 		});
 	},
 	fireSymbolListeners(pos) {
-		let gestureAngle = Math.atan2(pos.y - constants.get('HALF_WINDOW_HEIGHT'),
-			pos.x - constants.get('HALF_WINDOW_WIDTH')) * 180 / Math.PI;
+		let gestureAngle = Math.atan2(pos.y - HALF_WINDOW_HEIGHT,
+			pos.x - HALF_WINDOW_WIDTH) * 180 / Math.PI;
 		if (gestureAngle < 0) {
-			gestureAngle += 360;;
+			gestureAngle += 360;
 		}
 		gestureAngle = (gestureAngle + 90) % 360;
 
 		const radius = radiusFromCenter(pos);
 
+		if (waitForReset) {
+			if (radius < symbolRadius * 0.5) {
+				waitForReset = false;
+			} else {
+				return;
+			}
+		}
+		if (selectingT9LetterAngle !== -1) {
+			//Cancel if needed
+			console.log(radius, symbolRadius, gestureAngle, selectingT9LetterAngle);
+			if (radius >= symbolRadius &&
+				Math.abs(gestureAngle - selectingT9LetterAngle) <=
+					CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE) {
+				//Cancel this mode
+				chooseSymbolOverlay.hide();
+				selectingT9LetterAngle = -1;
+				waitForReset = true;
+			}
+			return;
+		}
 		if (radius >= symbolRadius) {
 			const maxGlowIntensity = getGlowIntensity(symbolRadius, radius);
 
-			if (USET9) {
-				gestureAngle = (gestureAngle + (360 / 26)) % 360;
-				if (maxGlowIntensity >= constants.get('KEY_PRESSED_MIN_DISTANCE') * 0.8 && cursorReset) {
-					//Some area was toggled, find out which one
-					let toggledIndex: number = comm._symbolListeners.length - 1;
-					let lastSlice: number = 0;
-					let broke: boolean = false;
-					for (let i = 0; i < comm._symbolListeners.length; i++) {
-						if (comm._symbolListeners[i].element.elName === 'T9Slice') {
-							if (gestureAngle < comm._symbolListeners[i].angle) {
-								toggledIndex = lastSlice;
-								broke = true;
-								break;
-							}
-							lastSlice = i;
+			gestureAngle = (gestureAngle + (360 / 26)) % 360;
+			if (maxGlowIntensity >= KEY_PRESSED_MIN_DISTANCE * 0.8) {
+				//Some area was toggled, find out which one
+				let toggledIndex: number = comm._symbolListeners.length - 1;
+				let lastSlice: number = 0;
+				let broke: boolean = false;
+				for (let i = 0; i < comm._symbolListeners.length; i++) {
+					if (comm._symbolListeners[i].element.elName === 'T9Slice') {
+						if (gestureAngle < comm._symbolListeners[i].angle) {
+							toggledIndex = lastSlice;
+							broke = true;
+							break;
 						}
+						lastSlice = i;
 					}
-					if (!broke) {
-						toggledIndex = lastSlice;
-					}
-
-					comm._symbolListeners[toggledIndex].listener(SymbolCommType.fired, radius - symbolRadius);
-					cursorReset = false;
-
-					comm.fireMainFaceListener(MainFaceCommType.T9KeyPressed,+ 
-						(comm._symbolListeners[toggledIndex].element as T9SliceElement)
-							.props.data.index + 1);
 				}
-			} else {
-				comm._symbolListeners.filter((listenerData) => {
-					if (shouldFireListener(gestureAngle, listenerData.angle)) {
-						return true;
-					}
-					listenerData.listener(SymbolCommType.intensityUpdate, 0);
-				}).forEach((listenerData) => {
-					const angleDifference = getAngleDifference(gestureAngle,
-						listenerData.angle);
-					listenerData.listener(SymbolCommType.intensityUpdate,
-						getAngleGlowIntensity(maxGlowIntensity, 
-							angleDifference) / 100);
+				if (!broke) {
+					toggledIndex = lastSlice;
+				}
 
-					if (keyPressed(maxGlowIntensity, angleDifference)) {
-						cursorReset = false;
-
-						listenerData.listener(SymbolCommType.fired);
-						comm.fireMainFaceListener(MainFaceCommType.keyPressed, 
-							(listenerData.element as SymbolElement).symbol.value);
-					}
-				});
+				const displacedPixels = radius - symbolRadius;
+				if (displacedPixels > CHOOSE_SYMBOL_ACTIVATION * VMIN) {
+					//Enter choose-symbol mode
+					enterChooseSymbolMode((comm._symbolListeners[toggledIndex].element as T9SliceElement)
+						.children.map((slice) => {
+							return slice.child.symbol.symbol;
+						}), comm._symbolListeners[toggledIndex].angle);
+					comm._symbolListeners[toggledIndex].listener(SymbolCommType.fired, 0);
+					comm._faceListeners.forEach((faceListener) => {
+						faceListener(MainFaceCommType.resetSlices);
+					});
+					pressingKey = -1;
+				} else {
+					comm._symbolListeners[toggledIndex].listener(SymbolCommType.fired, 
+						displacedPixels);
+					pressingKey = (comm._symbolListeners[toggledIndex].element as T9SliceElement)
+						.props.data.index + 1;
+				}
 			}
-		} else {
-			cursorReset = true;
-
-			comm._symbolListeners.forEach((listenerData) => {
-				listenerData.listener(SymbolCommType.intensityUpdate, 0);
-			});
+		} else if (pressingKey !== -1) {
+			comm.fireMainFaceListener(MainFaceCommType.T9KeyPressed, pressingKey);
+			pressingKey = -1;
 		}
 	},
 
@@ -180,11 +171,23 @@ const comm: CommHandlers = {
 				alert(`Sent message "${data}"`);
 				break;
 		}
+	},
+	symbolHover(symbol: string|number) {
+		comm.fireMainFaceListener(MainFaceCommType.T9KeyPressed, symbol);
+		chooseSymbolOverlay.hide();
+		selectingT9LetterAngle = -1;
+		waitForReset = true;
 	}
 };
+
+const chooseSymbolOverlay: components.ChooseSymbol = 
+	ReactDOM.render(React.createElement(components.ChooseSymbol, {
+		comm: comm
+	}),
+	document.getElementById('chooseSymbolOverlay')) as components.ChooseSymbol;
+
 ReactDOM.render(React.createElement(components.MainFace, {
 	comm: comm,
-	useT9: USET9,
 	t9Lib: t9
 }), document.getElementById('mainContainer'));
 
@@ -217,7 +220,7 @@ function getPointerRadius(vector: VectorArr, directionAngle: number): number {
 	const currentRatio = Math.abs(vector[2]) /
 		(Math.abs(vector[0]) + Math.abs(vector[1]));
 
-	return Math.min((1 / currentRatio) * constants.get('FINGER_ADJUSTMENT'), 1);
+	return Math.min((1 / currentRatio) * FINGER_ADJUSTMENT, 1);
 }
 
 function getPointer2DDirection(vector: VectorArr): number {
@@ -245,9 +248,9 @@ websocket.onmessage = (event) => {
 		const radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
 		
 		const radiusPx = radiusPercentage * symbolRadius;
-		pointer.x = constants.get('HALF_WINDOW_WIDTH') +
+		pointer.x = HALF_WINDOW_WIDTH +
 			(Math.cos(pointer2DDirection) * radiusPx);
-		pointer.y = constants.get('HALF_WINDOW_HEIGHT') + 
+		pointer.y = HALF_WINDOW_HEIGHT + 
 			(Math.sin(pointer2DDirection) * radiusPx);
 
 		pointerIcon.classList.remove('noPointer');

@@ -1,9 +1,16 @@
 import * as React from 'react';
+import * as util from './util';
 /// <reference path="./defs.d.ts" />
+
+type NumString = Array<{
+	type: 'T9'|'char',
+	data: number|string;
+}>;
 
 const CIRCLE_DEGREES = 360;
 const SLICES = 8;
 const T9_SLICE_DEGREES = CIRCLE_DEGREES / SLICES;
+const PRECISION_SYMBOL_SELECTION_ANGLE = 240;
 const T9Keymap = {
 	1: 'abc',
 	2: 'def',
@@ -15,22 +22,10 @@ const T9Keymap = {
 	8: 'wxyz'
 };
 
-/**
- * Converts an object to an array of its members
- * 
- * @param {Object} obj - The object to array-ify
- * 
- * @return {any[]} Its members
- */
-function objToArr<T>(obj: {
-	[key: string]: T;
-}): Array<T> {
-	return Object.getOwnPropertyNames(obj).map((index) => {
-		return obj[index];
-	});
-}
+let isCaps: boolean = false;
+let isSymbol: boolean = false;
 
-const T9Arr = objToArr(T9Keymap);
+const T9Arr = util.objToArr(T9Keymap);
 
 /**
  * Divides the circle in "entries" seperate slices
@@ -94,20 +89,15 @@ const SYMBOLS: Array<{
  * Gets the symbol for slice <at></at> index "index"
  * 
  * @param {number} index - The index of the symbol
- * @param {boolean} isCaps - Whether it's in upper case
- * @param {boolean} isTextSymbol - Whether it's a symbol (@#$% etc)
  * 
  * @return {Object} The symbol for that position
  */
-function getSymbol(index: number, isCaps: boolean, isTextSymbol: boolean): {
+function getSymbol(index: number): {
 	isIcon: boolean;
 	symbol: string;
 	value: string;
 } {
-	if (isCaps || isTextSymbol) {
-		debugger;
-	}
-	if (isTextSymbol) {
+	if (isSymbol) {
 		//Switch to the symbols instead of TEXT_CHARS
 		if (index <= 9) {
 			return {
@@ -167,8 +157,9 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 			angle: number;
 			index: number;
 			isLast?: boolean;
+			symbol?: string|number;
 		};
-		isT9: boolean;
+		isBig?: boolean;
 	}
 
 	constructor(props: {
@@ -180,7 +171,7 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 		this.state.isCapitalized = false;
 		this.state.isTextSymbol = false;
 
-		props.comm.addSymbolListener(this.props.data.angle + 90, this, (type, data) => {
+		props.comm && props.comm.addSymbolListener(this.props.data.angle + 90, this, (type, data) => {
 			switch (type) {
 				case SymbolCommType.intensityUpdate:
 					if (data < 0 || data !== this.opacity) {
@@ -188,29 +179,23 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 						this.opacity = data as number;
 					}
 					break;
-				case SymbolCommType.fired:
-					if (this.props.isT9) {
-						break;
-					}
-
-					this.symbolCont.style.fontWeight = 'bold';
-					
-					if (this.firedTimeout) {
-						window.clearTimeout(this.firedTimeout);
-					}
-					this.firedTimeout = window.setTimeout(() => {
-						this.firedTimeout = -1;
-						this.symbolCont.style.fontWeight = 'normal';
-					}, 1000);
-					break;
 				case SymbolCommType.updateTextType:
 					this.setState({
 						isCapitalized: data[0] as boolean,
 						isTextSymbol: data[1] as boolean
 					});
+					isCaps = data[0];
+					isSymbol = data[1];
 					break;
 			}
 		});
+	}
+	onMouseOver() {
+		if (this.props.isBig) {
+			this.props.comm.symbolHover(this.props.data.symbol);
+
+			this.symbolCont.classList.add('hovered');
+		}
 	}
 	render() {
 		const styles = {
@@ -218,21 +203,29 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 		};
 
 		let symbolData;
-		if (this.props.data.index === 26) {
+		if (this.props.data.symbol) {
+			symbolData = {
+				isIcon: false,
+				symbol: this.props.data.symbol,
+				value: this.props.data.symbol
+			};
+		} else if (this.props.data.index === 26) {
 			symbolData = {
 				isIcon: false,
 				symbol: '',
 				value: ''
 			}
 		} else {
-			symbolData = getSymbol(this.props.data.index, this.state.isCapitalized,
-				this.state.isTextSymbol);
+			symbolData = getSymbol(this.props.data.index);
 			this.symbol = symbolData;
 		}
 
 		return (
-			<div className="symbolCont" ref={(symbolCont) => this.symbolCont = symbolCont}>
-				<div className="symbolGlow" ref={(glow) => this.glow = glow}></div>
+			<div className={this.props.isBig ? 
+					'symbolCont big' : 'symbolCont'} 
+					ref={(symbolCont) => this.symbolCont = symbolCont}>
+				<div onMouseOver={this.onMouseOver.bind(this)}
+					className="symbolGlow" ref={(glow) => this.glow = glow}></div>
 				<div className="symbol" style={styles}>
 					{symbolData.isIcon ? 
 						<i className="material-icon">{symbolData.symbol}</i> :
@@ -245,6 +238,8 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 
 class Slice extends React.Component<any, any> implements SliceElement {
 	child: Symbol;
+	sliceEl: HTMLElement;
+
 	constructor(props) {
 		super(props);
 	}
@@ -254,10 +249,11 @@ class Slice extends React.Component<any, any> implements SliceElement {
 		};
 
 		return (
-			<div className="slice" style={styles}>
-				<Symbol ref={SymbolEl => this.child = SymbolEl} 
-					data={this.props.data} comm={this.props.comm}
-					isT9={this.props.isT9} />
+			<div ref={(sliceEl) => {this.sliceEl = sliceEl}} className={
+				this.props.isBig ? 'slice big' : 'slice'
+			} style={styles}>
+				<Symbol ref={SymbolEl => this.child = SymbolEl} isBig={this.props.isBig}
+					data={this.props.data} comm={this.props.comm} />
 			</div>
 		);
 	}
@@ -306,8 +302,7 @@ interface T9SliceProps {
 class T9Slice extends React.Component<any, any> implements T9SliceElement {
 	elName: 'T9Slice' = 'T9Slice';
 	props: T9SliceProps;
-	centerSliceBackground: SVGElement;
-	colorTimeout: number = -1;
+	centerSliceBackground: HTMLElement;
 	children: Array<Slice> = [];
 
 	constructor(props: T9SliceProps) {
@@ -316,15 +311,17 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 		props.comm.addSymbolListener(this.props.data.angle + 90, this, (type, data) => {
 			switch (type) {
 				case SymbolCommType.fired:
-					debugger;
-					this.centerSliceBackground.classList.add('toggled');
-					if (this.colorTimeout) {
-						window.clearTimeout(this.colorTimeout);
-					}
-					this.colorTimeout = window.setTimeout(() => {
-						this.colorTimeout = -1;
-						this.centerSliceBackground.classList.remove('toggled');
-					}, 1000);
+					const displacedPixels = data as number;
+					this.children.forEach((slice) => {
+						slice.sliceEl.style.width = `calc(45vmin + ${displacedPixels}px)`;
+					});
+					this.centerSliceBackground.style['will-change'] =
+						'width, height, margin-left, margin-top';
+					this.centerSliceBackground.style.width = `calc(98vmin + ${displacedPixels * 2}px)`;
+					this.centerSliceBackground.style.height = `calc(98vmin + ${displacedPixels * 2}px)`;
+					this.centerSliceBackground.style.marginLeft = `${-displacedPixels}px`;
+					this.centerSliceBackground.style.marginTop = `${-displacedPixels}px`;
+					this.centerSliceBackground.children[0].classList.add('toggled');
 					break;
 			}
 		})
@@ -351,44 +348,75 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 						<path className="T9SliceBorder" 
 							d={getSvgPathForSlice(startAngle - (centerSliceSize / 2),
 								1)}></path>
-						<path className="T9SliceCenter" 
-							d={getSvgPathForSlice(startAngle, centerSliceSize)}
-							ref={centerSliceBackground => this.centerSliceBackground = 
-								centerSliceBackground}>
-						</path>
 						<path className="T9SliceBorder" 
 							d={getSvgPathForSlice(startAngle + (centerSliceSize / 2),
 								1)}></path>
 					</svg>
+					<svg viewBox="0 0 300 300" 
+						ref={centerSliceBackground => this.centerSliceBackground = 
+								centerSliceBackground as any}>
+						<path className="T9SliceCenter" 
+							d={getSvgPathForSlice(startAngle, centerSliceSize)}>
+						</path>
+					</svg>
 				</div>
 				{sliceData.map((slice) => {
 					return <Slice ref={(sliceEl) => {this.children.push(sliceEl)}}
-						key={slice.index} isT9={true} data={slice} comm={this.props.comm} />;
+						key={slice.index} data={slice} comm={this.props.comm} />;
 				})}
 			</div>
 		);
 	}
 }
 
-function predictNumString(t9Lib: T9Defs, numstring: string): Array<string> {
-	const res = t9Lib.predict(numstring);
-	if (res && res.length > 0) {
-		return res;
+function splitNumString(numstring: NumString): Array<{
+	type: 'T9'|'char';
+	arr: Array<string|number>;
+}> {
+	let prevType: 'T9'|'char' = numstring[0].type;
+	const arr: Array<{
+		type: 'T9'|'char';
+		arr: Array<string|number>;
+	}> = [{
+		type: prevType,
+		arr: []
+	}];
+
+	for (let i = 0; i < numstring.length; i++) {
+		if (prevType === numstring[i].type) {
+			arr[arr.length - 1].arr.push(numstring[i].data);
+		} else {
+			arr.push({
+				type: numstring[i].type,
+				arr: [numstring[i].data]
+			});
+		}
 	}
-	return [numstring.split('').map((num) => {
-		return T9Keymap[num][0];
-	}).join('')];
+	return arr;
+}
+
+function predictNumString(t9Lib: T9Defs, numstring: {
+	type: 'T9'|'char';
+	arr: Array<string|number>;
+}): Array<string> {
+	if (numstring.type === 'T9') {
+		const predicted = t9Lib.predict(numstring.arr.join(''));
+		if (predicted && predicted.length > 0) {
+			return predicted;
+		}
+	}
+	return [numstring.arr.join('')];
 }
 
 class WatchScreen extends React.Component<any, any> {
 	state: {
 		currentText?: string;
-		currentNums?: string;
+		currentNums?: NumString;
 	}
 	props: {
 		comm: CommHandlers;
-		useT9: boolean;
 		t9Lib: T9Defs;
+		parent: MainFace;
 	};
 	suggestions: Array<string>;
 	upperCase: boolean = false;
@@ -427,16 +455,30 @@ class WatchScreen extends React.Component<any, any> {
 							break;
 					}
 					break;
-				case MainFaceCommType.keyPressed:
-					this.addChar(data as string);
-					break;
 				case MainFaceCommType.T9KeyPressed:
 					this.addNum(data as number);
+
+					this._resetSlices();
+					break;
+				case MainFaceCommType.resetSlices:
+					this._resetSlices();
 					break;
 			}
 		});
 	}
-
+	_resetSlices() {
+		this.props.parent.slices.forEach((slice) => {
+			slice.children.forEach((symbol) => {
+				symbol.sliceEl.style.width = '45vmin';
+			});
+			slice.centerSliceBackground.style['will-change'] = 'auto';
+			slice.centerSliceBackground.style.width = `98vmin`;
+			slice.centerSliceBackground.style.height = `98vmin`;
+			slice.centerSliceBackground.style.marginLeft = '0px';
+			slice.centerSliceBackground.style.marginTop = '0px';
+			slice.centerSliceBackground.children[0].classList.remove('toggled');
+		});
+	}
 	_flashElement(element: HTMLElement) {
 		element.classList.add('active');
 		window.setTimeout(() => {
@@ -462,28 +504,40 @@ class WatchScreen extends React.Component<any, any> {
 			}, 0);
 		}
 	}
-	addNum(num: number|' ') {
+	addNum(num: number|string) {
 		this.state = this.state || {
-			currentNums: '',
+			currentNums: [],
 			currentText: ''
 		};
 
 		const wasScrolledToBottom = this.mainTextCont.scrollTop === 
 			this.mainTextCont.scrollHeight;
 
-		const newNums = this.state.currentNums + num;
+		const addedObj: {
+			type: 'T9'|'char';
+			data: number|string;
+		} = {} as any;
+		if (isCaps || isSymbol || typeof num === 'string') {
+			addedObj.type = 'char';
+			addedObj.data = typeof num === 'number' ? getSymbol(num * 3).value : num;
+		} else {
+			addedObj.type = 'T9';
+			addedObj.data = num;
+		}
+
+		const newNums = this.state.currentNums.concat(addedObj);
 		const oldString = this.state.currentText;
 		const oldStringSplit = oldString.split(' ');
 
 		this.suggestions = predictNumString(
-			this.props.t9Lib, newNums.split(' ').pop());
+			this.props.t9Lib, splitNumString(newNums).pop());
 		oldStringSplit[oldStringSplit.length - 1] = this.suggestions[0];
 
 		this.setState({
 			currentNums: newNums,
-			currentText: newNums.split(' ').map((numstring) => {
+			currentText: splitNumString(newNums).map((numstring) => {
 				return predictNumString(this.props.t9Lib, numstring)[0];
-			}).join(' ')
+			}).join('')
 		});
 
 		if (wasScrolledToBottom) {
@@ -494,36 +548,24 @@ class WatchScreen extends React.Component<any, any> {
 	}
 	addSpace() {
 		this.addChar(' ');
-		if (this.props.useT9) {
-			this.addNum(' ');
-		}
+		this.addNum(' ');
 	}
 	deleteChar() {
 		this.state = this.state || {
 			currentText: '',
-			currentNums: ''
+			currentNums: []
 		};
 		let newState;
-		if (this.props.useT9) {
-			const textSplit = this.state.currentText.split(' ');
-			const newNums = this.state.currentNums.slice(0, -1);
+		const textSplit = this.state.currentText.split(' ');
+		const newNums = this.state.currentNums.slice(0, -1);
 
-			this.suggestions = predictNumString(this.props.t9Lib, newNums.split(' ').pop());
+		this.suggestions = predictNumString(this.props.t9Lib, splitNumString(newNums).pop());
 
-			newState = {
-				currentNums: newNums,
-				currentText: newNums.split(' ').map((numstring, index, arr) => {
-					if (index === arr.length - 1) {
-						return predictNumString(this.props.t9Lib, numstring)[0];
-					} else {
-						return textSplit[index];
-					}
-				}).join(' ')
-			}
-		} else {
-			newState = {
-				currentText: this.state.currentText.slice(0, -1)
-			};
+		newState = {
+			currentNums: newNums,
+			currentText: splitNumString(newNums).map((numstring) => {
+				return predictNumString(this.props.t9Lib, numstring)[0];
+			}).join('')
 		}
 		this.setState(newState);
 	}
@@ -634,10 +676,10 @@ class WatchScreen extends React.Component<any, any> {
 
 export class MainFace extends React.Component<any, any> {
 	props: {
-		useT9: boolean;
 		comm: CommHandlers;
 		t9Lib: T9Defs
 	};
+	slices: Array<T9Slice> = [];
 
 	constructor(props) {
 		super(props);
@@ -650,25 +692,17 @@ export class MainFace extends React.Component<any, any> {
 						<div className="verticalCenterer">
 							<div className="centered">
 								<div id="faceSlices">
-									{this.props.useT9 ?
-										divideCircle(CIRCLE_DEGREES, SLICES)
-											.map((slice: {
-												index: number;
-												angle: number;
-											}, index, arr) => {
-												return <T9Slice key={slice.index}
-													data={slice} comm={this.props.comm}/>
-											}) 
-										: 
-										divideCircle(CIRCLE_DEGREES, CIRCLE_SLICES)
-											.map((slice) => {
-												return <Slice key={slice.index} 
-													data={slice} comm={this.props.comm} />;
-										})
-									}
+									{divideCircle(CIRCLE_DEGREES, SLICES)
+										.map((slice: {
+											index: number;
+											angle: number;
+										}, index, arr) => {
+											return <T9Slice ref={(slice) => {
+												this.slices.push(slice);
+											}} key={slice.index} data={slice} comm={this.props.comm}/>
+										})}										
 								</div>
-								<WatchScreen useT9={this.props.useT9}
-									t9Lib={this.props.t9Lib} comm={this.props.comm}/>
+								<WatchScreen parent={this} t9Lib={this.props.t9Lib} comm={this.props.comm}/>
 							</div>
 						</div>
 					</div>
@@ -677,3 +711,70 @@ export class MainFace extends React.Component<any, any> {
 		);
 	}
 };
+
+export class ChooseSymbol extends React.Component<any, any> {
+	state: {
+		chars: Array<string|number>;
+		angle: number;
+		hidden: boolean;
+	}
+	mainCont: HTMLElement;
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			chars: [],
+			angle: 0,
+			hidden: true
+		}
+	}
+	addSymbols(chars: Array<string|number>, angle: number) {
+		this.setState({
+			chars: chars.reverse(),
+			angle: angle,
+			hidden: false
+		});
+	}
+	hide() {
+		this.setState({
+			chars: this.state.chars,
+			angle: this.state.angle,
+			hidden: true
+		});
+	}
+	show() {
+		this.setState({
+			chars: this.state.chars,
+			angle: this.state.angle,
+			hidden: false
+		});
+	}
+	render() {
+		const oppositeAngle = (this.state.angle + 67.5) % 360;
+		const angles = divideCircle(PRECISION_SYMBOL_SELECTION_ANGLE,
+			this.state.chars.length).map((slice: any, index) => {
+				slice.symbol = this.state.chars[index];
+				slice.angle = (slice.angle + oppositeAngle) % 360;
+				return slice;
+			});
+		return (
+			<div ref={(mainCont) => {this.mainCont = mainCont}}
+				className={this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}>
+				{this.state.hidden ? 
+					'' :
+					<div className="chooseSymbolCont">
+						{angles.map((slice: {
+							index: number;
+							angle: number;
+							symbol: string|number;
+						}) => {
+							return <Slice key={slice.index} data={slice}
+								isBig={true} comm={this.props.comm} />;
+						})}
+					</div>
+				}
+			</div>
+		)
+	}
+}

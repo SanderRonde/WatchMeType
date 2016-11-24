@@ -5,9 +5,11 @@ var __extends = (this && this.__extends) || function (d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 var React = require('react');
+var util = require('./util');
 var CIRCLE_DEGREES = 360;
 var SLICES = 8;
 var T9_SLICE_DEGREES = CIRCLE_DEGREES / SLICES;
+var PRECISION_SYMBOL_SELECTION_ANGLE = 240;
 var T9Keymap = {
     1: 'abc',
     2: 'def',
@@ -18,12 +20,9 @@ var T9Keymap = {
     7: 'tuv',
     8: 'wxyz'
 };
-function objToArr(obj) {
-    return Object.getOwnPropertyNames(obj).map(function (index) {
-        return obj[index];
-    });
-}
-var T9Arr = objToArr(T9Keymap);
+var isCaps = false;
+var isSymbol = false;
+var T9Arr = util.objToArr(T9Keymap);
 function divideCircle(maxAngle, entries) {
     var res = [];
     var angle = maxAngle / entries;
@@ -57,11 +56,8 @@ var SYMBOLS = [
         value: symbolPair[1]
     };
 });
-function getSymbol(index, isCaps, isTextSymbol) {
-    if (isCaps || isTextSymbol) {
-        debugger;
-    }
-    if (isTextSymbol) {
+function getSymbol(index) {
+    if (isSymbol) {
         if (index <= 9) {
             return {
                 isIcon: false,
@@ -116,7 +112,7 @@ var Symbol = (function (_super) {
         this.state = this.state || {};
         this.state.isCapitalized = false;
         this.state.isTextSymbol = false;
-        props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
+        props.comm && props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
             switch (type) {
                 case 0:
                     if (data < 0 || data !== _this.opacity) {
@@ -124,35 +120,37 @@ var Symbol = (function (_super) {
                         _this.opacity = data;
                     }
                     break;
-                case 1:
-                    if (_this.props.isT9) {
-                        break;
-                    }
-                    _this.symbolCont.style.fontWeight = 'bold';
-                    if (_this.firedTimeout) {
-                        window.clearTimeout(_this.firedTimeout);
-                    }
-                    _this.firedTimeout = window.setTimeout(function () {
-                        _this.firedTimeout = -1;
-                        _this.symbolCont.style.fontWeight = 'normal';
-                    }, 1000);
-                    break;
                 case 2:
                     _this.setState({
                         isCapitalized: data[0],
                         isTextSymbol: data[1]
                     });
+                    isCaps = data[0];
+                    isSymbol = data[1];
                     break;
             }
         });
     }
+    Symbol.prototype.onMouseOver = function () {
+        if (this.props.isBig) {
+            this.props.comm.symbolHover(this.props.data.symbol);
+            this.symbolCont.classList.add('hovered');
+        }
+    };
     Symbol.prototype.render = function () {
         var _this = this;
         var styles = {
             transform: "rotate(" + -this.props.data.angle + "deg)"
         };
         var symbolData;
-        if (this.props.data.index === 26) {
+        if (this.props.data.symbol) {
+            symbolData = {
+                isIcon: false,
+                symbol: this.props.data.symbol,
+                value: this.props.data.symbol
+            };
+        }
+        else if (this.props.data.index === 26) {
             symbolData = {
                 isIcon: false,
                 symbol: '',
@@ -160,11 +158,12 @@ var Symbol = (function (_super) {
             };
         }
         else {
-            symbolData = getSymbol(this.props.data.index, this.state.isCapitalized, this.state.isTextSymbol);
+            symbolData = getSymbol(this.props.data.index);
             this.symbol = symbolData;
         }
-        return (React.createElement("div", {className: "symbolCont", ref: function (symbolCont) { return _this.symbolCont = symbolCont; }}, 
-            React.createElement("div", {className: "symbolGlow", ref: function (glow) { return _this.glow = glow; }}), 
+        return (React.createElement("div", {className: this.props.isBig ?
+            'symbolCont big' : 'symbolCont', ref: function (symbolCont) { return _this.symbolCont = symbolCont; }}, 
+            React.createElement("div", {onMouseOver: this.onMouseOver.bind(this), className: "symbolGlow", ref: function (glow) { return _this.glow = glow; }}), 
             React.createElement("div", {className: "symbol", style: styles}, symbolData.isIcon ?
                 React.createElement("i", {className: "material-icon"}, symbolData.symbol) :
                 symbolData.symbol)));
@@ -181,8 +180,8 @@ var Slice = (function (_super) {
         var styles = {
             transform: "rotate(" + this.props.data.angle + "deg)"
         };
-        return (React.createElement("div", {className: "slice", style: styles}, 
-            React.createElement(Symbol, {ref: function (SymbolEl) { return _this.child = SymbolEl; }, data: this.props.data, comm: this.props.comm, isT9: this.props.isT9})
+        return (React.createElement("div", {ref: function (sliceEl) { _this.sliceEl = sliceEl; }, className: this.props.isBig ? 'slice big' : 'slice', style: styles}, 
+            React.createElement(Symbol, {ref: function (SymbolEl) { return _this.child = SymbolEl; }, isBig: this.props.isBig, data: this.props.data, comm: this.props.comm})
         ));
     };
     return Slice;
@@ -213,20 +212,21 @@ var T9Slice = (function (_super) {
         var _this = this;
         _super.call(this, props);
         this.elName = 'T9Slice';
-        this.colorTimeout = -1;
         this.children = [];
         props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
             switch (type) {
                 case 1:
-                    debugger;
-                    _this.centerSliceBackground.classList.add('toggled');
-                    if (_this.colorTimeout) {
-                        window.clearTimeout(_this.colorTimeout);
-                    }
-                    _this.colorTimeout = window.setTimeout(function () {
-                        _this.colorTimeout = -1;
-                        _this.centerSliceBackground.classList.remove('toggled');
-                    }, 1000);
+                    var displacedPixels_1 = data;
+                    _this.children.forEach(function (slice) {
+                        slice.sliceEl.style.width = "calc(45vmin + " + displacedPixels_1 + "px)";
+                    });
+                    _this.centerSliceBackground.style['will-change'] =
+                        'width, height, margin-left, margin-top';
+                    _this.centerSliceBackground.style.width = "calc(98vmin + " + displacedPixels_1 * 2 + "px)";
+                    _this.centerSliceBackground.style.height = "calc(98vmin + " + displacedPixels_1 * 2 + "px)";
+                    _this.centerSliceBackground.style.marginLeft = -displacedPixels_1 + "px";
+                    _this.centerSliceBackground.style.marginTop = -displacedPixels_1 + "px";
+                    _this.centerSliceBackground.children[0].classList.add('toggled');
                     break;
             }
         });
@@ -249,24 +249,44 @@ var T9Slice = (function (_super) {
             React.createElement("div", {className: "T9SliceBackground"}, 
                 React.createElement("svg", {viewBox: "0 0 300 300"}, 
                     React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(startAngle - (centerSliceSize / 2), 1)}), 
-                    React.createElement("path", {className: "T9SliceCenter", d: getSvgPathForSlice(startAngle, centerSliceSize), ref: function (centerSliceBackground) { return _this.centerSliceBackground =
-                        centerSliceBackground; }}), 
-                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(startAngle + (centerSliceSize / 2), 1)}))
-            ), 
+                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(startAngle + (centerSliceSize / 2), 1)})), 
+                React.createElement("svg", {viewBox: "0 0 300 300", ref: function (centerSliceBackground) { return _this.centerSliceBackground =
+                    centerSliceBackground; }}, 
+                    React.createElement("path", {className: "T9SliceCenter", d: getSvgPathForSlice(startAngle, centerSliceSize)})
+                )), 
             sliceData.map(function (slice) {
-                return React.createElement(Slice, {ref: function (sliceEl) { _this.children.push(sliceEl); }, key: slice.index, isT9: true, data: slice, comm: _this.props.comm});
+                return React.createElement(Slice, {ref: function (sliceEl) { _this.children.push(sliceEl); }, key: slice.index, data: slice, comm: _this.props.comm});
             })));
     };
     return T9Slice;
 }(React.Component));
-function predictNumString(t9Lib, numstring) {
-    var res = t9Lib.predict(numstring);
-    if (res && res.length > 0) {
-        return res;
+function splitNumString(numstring) {
+    var prevType = numstring[0].type;
+    var arr = [{
+            type: prevType,
+            arr: []
+        }];
+    for (var i = 0; i < numstring.length; i++) {
+        if (prevType === numstring[i].type) {
+            arr[arr.length - 1].arr.push(numstring[i].data);
+        }
+        else {
+            arr.push({
+                type: numstring[i].type,
+                arr: [numstring[i].data]
+            });
+        }
     }
-    return [numstring.split('').map(function (num) {
-            return T9Keymap[num][0];
-        }).join('')];
+    return arr;
+}
+function predictNumString(t9Lib, numstring) {
+    if (numstring.type === 'T9') {
+        var predicted = t9Lib.predict(numstring.arr.join(''));
+        if (predicted && predicted.length > 0) {
+            return predicted;
+        }
+    }
+    return [numstring.arr.join('')];
 }
 var WatchScreen = (function (_super) {
     __extends(WatchScreen, _super);
@@ -297,15 +317,29 @@ var WatchScreen = (function (_super) {
                             break;
                     }
                     break;
-                case 0:
-                    _this.addChar(data);
-                    break;
                 case 2:
                     _this.addNum(data);
+                    _this._resetSlices();
+                    break;
+                case 3:
+                    _this._resetSlices();
                     break;
             }
         });
     }
+    WatchScreen.prototype._resetSlices = function () {
+        this.props.parent.slices.forEach(function (slice) {
+            slice.children.forEach(function (symbol) {
+                symbol.sliceEl.style.width = '45vmin';
+            });
+            slice.centerSliceBackground.style['will-change'] = 'auto';
+            slice.centerSliceBackground.style.width = "98vmin";
+            slice.centerSliceBackground.style.height = "98vmin";
+            slice.centerSliceBackground.style.marginLeft = '0px';
+            slice.centerSliceBackground.style.marginTop = '0px';
+            slice.centerSliceBackground.children[0].classList.remove('toggled');
+        });
+    };
     WatchScreen.prototype._flashElement = function (element) {
         element.classList.add('active');
         window.setTimeout(function () {
@@ -331,21 +365,30 @@ var WatchScreen = (function (_super) {
     WatchScreen.prototype.addNum = function (num) {
         var _this = this;
         this.state = this.state || {
-            currentNums: '',
+            currentNums: [],
             currentText: ''
         };
         var wasScrolledToBottom = this.mainTextCont.scrollTop ===
             this.mainTextCont.scrollHeight;
-        var newNums = this.state.currentNums + num;
+        var addedObj = {};
+        if (isCaps || isSymbol || typeof num === 'string') {
+            addedObj.type = 'char';
+            addedObj.data = typeof num === 'number' ? getSymbol(num * 3).value : num;
+        }
+        else {
+            addedObj.type = 'T9';
+            addedObj.data = num;
+        }
+        var newNums = this.state.currentNums.concat(addedObj);
         var oldString = this.state.currentText;
         var oldStringSplit = oldString.split(' ');
-        this.suggestions = predictNumString(this.props.t9Lib, newNums.split(' ').pop());
+        this.suggestions = predictNumString(this.props.t9Lib, splitNumString(newNums).pop());
         oldStringSplit[oldStringSplit.length - 1] = this.suggestions[0];
         this.setState({
             currentNums: newNums,
-            currentText: newNums.split(' ').map(function (numstring) {
+            currentText: splitNumString(newNums).map(function (numstring) {
                 return predictNumString(_this.props.t9Lib, numstring)[0];
-            }).join(' ')
+            }).join('')
         });
         if (wasScrolledToBottom) {
             window.setTimeout(function () {
@@ -355,38 +398,24 @@ var WatchScreen = (function (_super) {
     };
     WatchScreen.prototype.addSpace = function () {
         this.addChar(' ');
-        if (this.props.useT9) {
-            this.addNum(' ');
-        }
+        this.addNum(' ');
     };
     WatchScreen.prototype.deleteChar = function () {
         var _this = this;
         this.state = this.state || {
             currentText: '',
-            currentNums: ''
+            currentNums: []
         };
         var newState;
-        if (this.props.useT9) {
-            var textSplit_1 = this.state.currentText.split(' ');
-            var newNums = this.state.currentNums.slice(0, -1);
-            this.suggestions = predictNumString(this.props.t9Lib, newNums.split(' ').pop());
-            newState = {
-                currentNums: newNums,
-                currentText: newNums.split(' ').map(function (numstring, index, arr) {
-                    if (index === arr.length - 1) {
-                        return predictNumString(_this.props.t9Lib, numstring)[0];
-                    }
-                    else {
-                        return textSplit_1[index];
-                    }
-                }).join(' ')
-            };
-        }
-        else {
-            newState = {
-                currentText: this.state.currentText.slice(0, -1)
-            };
-        }
+        var textSplit = this.state.currentText.split(' ');
+        var newNums = this.state.currentNums.slice(0, -1);
+        this.suggestions = predictNumString(this.props.t9Lib, splitNumString(newNums).pop());
+        newState = {
+            currentNums: newNums,
+            currentText: splitNumString(newNums).map(function (numstring) {
+                return predictNumString(_this.props.t9Lib, numstring)[0];
+            }).join('')
+        };
         this.setState(newState);
     };
     WatchScreen.prototype.sendPress = function () {
@@ -470,6 +499,7 @@ var MainFace = (function (_super) {
     __extends(MainFace, _super);
     function MainFace(props) {
         _super.call(this, props);
+        this.slices = [];
     }
     MainFace.prototype.render = function () {
         var _this = this;
@@ -478,17 +508,13 @@ var MainFace = (function (_super) {
                 React.createElement("div", {className: "horizontalCenterer"}, 
                     React.createElement("div", {className: "verticalCenterer"}, 
                         React.createElement("div", {className: "centered"}, 
-                            React.createElement("div", {id: "faceSlices"}, this.props.useT9 ?
-                                divideCircle(CIRCLE_DEGREES, SLICES)
-                                    .map(function (slice, index, arr) {
-                                    return React.createElement(T9Slice, {key: slice.index, data: slice, comm: _this.props.comm});
-                                })
-                                :
-                                    divideCircle(CIRCLE_DEGREES, CIRCLE_SLICES)
-                                        .map(function (slice) {
-                                        return React.createElement(Slice, {key: slice.index, data: slice, comm: _this.props.comm});
-                                    })), 
-                            React.createElement(WatchScreen, {useT9: this.props.useT9, t9Lib: this.props.t9Lib, comm: this.props.comm}))
+                            React.createElement("div", {id: "faceSlices"}, divideCircle(CIRCLE_DEGREES, SLICES)
+                                .map(function (slice, index, arr) {
+                                return React.createElement(T9Slice, {ref: function (slice) {
+                                    _this.slices.push(slice);
+                                }, key: slice.index, data: slice, comm: _this.props.comm});
+                            })), 
+                            React.createElement(WatchScreen, {parent: this, t9Lib: this.props.t9Lib, comm: this.props.comm}))
                     )
                 )
             )
@@ -498,4 +524,52 @@ var MainFace = (function (_super) {
 }(React.Component));
 exports.MainFace = MainFace;
 ;
+var ChooseSymbol = (function (_super) {
+    __extends(ChooseSymbol, _super);
+    function ChooseSymbol(props) {
+        _super.call(this, props);
+        this.state = {
+            chars: [],
+            angle: 0,
+            hidden: true
+        };
+    }
+    ChooseSymbol.prototype.addSymbols = function (chars, angle) {
+        this.setState({
+            chars: chars.reverse(),
+            angle: angle,
+            hidden: false
+        });
+    };
+    ChooseSymbol.prototype.hide = function () {
+        this.setState({
+            chars: this.state.chars,
+            angle: this.state.angle,
+            hidden: true
+        });
+    };
+    ChooseSymbol.prototype.show = function () {
+        this.setState({
+            chars: this.state.chars,
+            angle: this.state.angle,
+            hidden: false
+        });
+    };
+    ChooseSymbol.prototype.render = function () {
+        var _this = this;
+        var oppositeAngle = (this.state.angle + 67.5) % 360;
+        var angles = divideCircle(PRECISION_SYMBOL_SELECTION_ANGLE, this.state.chars.length).map(function (slice, index) {
+            slice.symbol = _this.state.chars[index];
+            slice.angle = (slice.angle + oppositeAngle) % 360;
+            return slice;
+        });
+        return (React.createElement("div", {ref: function (mainCont) { _this.mainCont = mainCont; }, className: this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}, this.state.hidden ?
+            '' :
+            React.createElement("div", {className: "chooseSymbolCont"}, angles.map(function (slice) {
+                return React.createElement(Slice, {key: slice.index, data: slice, isBig: true, comm: _this.props.comm});
+            }))));
+    };
+    return ChooseSymbol;
+}(React.Component));
+exports.ChooseSymbol = ChooseSymbol;
 //# sourceMappingURL=components.js.map

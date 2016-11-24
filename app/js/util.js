@@ -7,4 +7,10 @@ function utilFetch(url, init) {
     return fetchPolyfill(url, init);
 }
 exports.fetch = utilFetch;
+function objToArr(obj) {
+    return Object.getOwnPropertyNames(obj).map(function (index) {
+        return obj[index];
+    });
+}
+exports.objToArr = objToArr;
 //# sourceMappingURL=util.js.map
