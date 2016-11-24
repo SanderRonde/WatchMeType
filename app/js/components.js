@@ -131,12 +131,6 @@ var Symbol = (function (_super) {
             }
         });
     }
-    Symbol.prototype.onMouseOver = function () {
-        if (this.props.isBig) {
-            this.props.comm.symbolHover(this.props.data.symbol);
-            this.symbolCont.classList.add('hovered');
-        }
-    };
     Symbol.prototype.render = function () {
         var _this = this;
         var styles = {
@@ -159,12 +153,26 @@ var Symbol = (function (_super) {
         }
         else {
             symbolData = getSymbol(this.props.data.index);
-            this.symbol = symbolData;
         }
+        this.symbol = symbolData;
+        var symbolEl;
+        window.setTimeout(function () {
+            if (_this.props.isBig) {
+                var bcr = symbolEl.getBoundingClientRect();
+                var vmin = Math.min(window.innerWidth, window.innerHeight) / 100;
+                _this.area = {
+                    x: bcr.left,
+                    y: bcr.top + (vmin * 3.5),
+                    radius: vmin * 10.5
+                };
+            }
+        }, 0);
         return (React.createElement("div", {className: this.props.isBig ?
             'symbolCont big' : 'symbolCont', ref: function (symbolCont) { return _this.symbolCont = symbolCont; }}, 
-            React.createElement("div", {onMouseOver: this.onMouseOver.bind(this), className: "symbolGlow", ref: function (glow) { return _this.glow = glow; }}), 
-            React.createElement("div", {className: "symbol", style: styles}, symbolData.isIcon ?
+            React.createElement("div", {className: "symbolGlow", ref: function (glow) { return _this.glow = glow; }}), 
+            React.createElement("div", {ref: function (el) {
+                symbolEl = el;
+            }, className: "symbol", style: styles}, symbolData.isIcon ?
                 React.createElement("i", {className: "material-icon"}, symbolData.symbol) :
                 symbolData.symbol)));
     };
@@ -326,7 +334,11 @@ var WatchScreen = (function (_super) {
                     }
                     break;
                 case 2:
-                    _this.addNum(data);
+                    _this.addNum(data, false);
+                    _this._resetSlices();
+                    break;
+                case 4:
+                    _this.addNum(data, true);
                     _this._resetSlices();
                     break;
                 case 3:
@@ -354,37 +366,25 @@ var WatchScreen = (function (_super) {
             element.classList.remove('active');
         }, 100);
     };
-    WatchScreen.prototype.addChar = function (char) {
-        var _this = this;
-        this.state = this.state || {
-            currentText: ''
-        };
-        var wasScrolledToBottom = this.mainTextCont.scrollTop ===
-            this.mainTextCont.scrollHeight;
-        this.setState({
-            currentText: this.state.currentText + char
-        });
-        if (wasScrolledToBottom) {
-            window.setTimeout(function () {
-                _this.mainTextCont.scrollTop = _this.mainTextCont.scrollHeight;
-            }, 0);
-        }
-    };
-    WatchScreen.prototype.addNum = function (num) {
+    WatchScreen.prototype.addNum = function (num, isChar) {
         var _this = this;
         this.state = this.state || {
             currentNums: [],
             currentText: ''
         };
         var lastChar = this.state.currentNums.slice(-1)[0];
-        if (num === ' ' && lastChar.type === 'char' && lastChar.data === ' ') {
+        if (num === ' ' && lastChar && lastChar.type === 'char' && lastChar.data === ' ') {
             this.state.currentNums[this.state.currentNums.length - 1].data = '.';
             this.state.currentText = this.state.currentText.slice(0, -1) + '.';
         }
-        var wasScrolledToBottom = this.mainTextCont.scrollTop ===
+        var wasScrolledToBottom = this.mainTextCont.scrollTop <=
             this.mainTextCont.scrollHeight;
         var addedObj = {};
-        if (isCaps || isSymbol || typeof num === 'string') {
+        if (isChar) {
+            addedObj.type = 'char';
+            addedObj.data = num;
+        }
+        else if (isCaps || isSymbol || typeof num === 'string') {
             if (isCaps && !isSymbol) {
                 addedObj.type = 'T9Caps';
                 addedObj.data = num;
@@ -403,7 +403,6 @@ var WatchScreen = (function (_super) {
         var oldStringSplit = oldString.split(' ');
         this.suggestions = predictNumString(this.props.t9Lib, splitNumString(newNums).pop());
         oldStringSplit[oldStringSplit.length - 1] = this.suggestions[0];
-        console.log(splitNumString(newNums));
         this.setState({
             currentNums: newNums,
             currentText: splitNumString(newNums).map(function (numstring) {
@@ -417,8 +416,7 @@ var WatchScreen = (function (_super) {
         }
     };
     WatchScreen.prototype.addSpace = function () {
-        this.addChar(' ');
-        this.addNum(' ');
+        this.addNum(' ', true);
     };
     WatchScreen.prototype.deleteChar = function () {
         var _this = this;
@@ -477,60 +475,37 @@ var WatchScreen = (function (_super) {
                     (reverse ? -1 : 1)) % this.suggestions.length]
         });
     };
-    WatchScreen.prototype._splitIntoWords = function (string) {
+    WatchScreen.prototype._splitIntoWords = function (string, numstring) {
+        var index = 0;
         var words = [];
-        for (var i = 0; i < string.length; i++) {
-            var lastWord = words[words.length - 1] || { type: 'nothing' };
-            if (string.charCodeAt(i) >= 97 && string.charCodeAt(i) <= 122) {
-                if (lastWord.type === 'word') {
-                    lastWord.str += string[i];
-                }
-                else {
-                    words.push({
-                        type: 'word',
-                        str: string[i]
-                    });
-                }
-            }
-            else if (string.charCodeAt(i) >= 65 && string.charCodeAt(i) <= 90) {
-                if (lastWord.type === 'caps-word') {
-                    lastWord.str += string[i];
-                }
-                else {
-                    words.push({
-                        type: 'caps-word',
-                        str: string[i]
-                    });
-                }
-            }
-            else {
-                if (lastWord.type === 'non-word') {
-                    lastWord.str += string[i];
-                }
-                else {
-                    words.push({
-                        type: 'non-word',
-                        str: string[i]
-                    });
-                }
-            }
-        }
+        splitNumString(numstring).forEach(function (splitPart) {
+            words.push({
+                type: splitPart.type === 'T9' ? 'word' :
+                    splitPart.type === 'T9Caps' ? 'caps-word' : 'non-word',
+                str: string.slice(index, index += splitPart.arr.length)
+            });
+        });
         return words;
     };
     WatchScreen.prototype.render = function () {
         var _this = this;
         return (React.createElement("div", {id: "mainScreen"}, 
-            React.createElement("div", {id: "mainText", ref: function (mainText) { return _this.mainTextCont = mainText; }}, this._splitIntoWords(this.state && this.state.currentText || '')
-                .map(function (word, index, arr) {
-                var styles = {};
-                if (index === arr.length - 1 && word.type !== 'non-word') {
-                    styles.textDecoration = 'underline';
-                    return React.createElement("span", {key: index, className: "mainTextWord", style: styles}, word.str);
-                }
-                return (React.createElement("span", {key: index, className: "mainTextGroupCont"}, 
-                    React.createElement("span", {className: "mainTextWord", style: styles}, word.str)
-                ));
-            })), 
+            React.createElement("div", {id: "mainText", ref: function (mainText) { return _this.mainTextCont = mainText; }}, 
+                this._splitIntoWords(this.state && this.state.currentText || '', this.state && this.state.currentNums || [])
+                    .map(function (word, index, arr) {
+                    var styles = {};
+                    if (index === arr.length - 1 && word.type !== 'non-word') {
+                        styles.textDecoration = 'underline';
+                        return React.createElement("span", {key: index, className: "mainTextWord", style: styles}, word.str);
+                    }
+                    if (word.str === ' ') {
+                        return React.createElement("span", {key: index, className: "mainTextSpace"}, " ");
+                    }
+                    return (React.createElement("span", {key: index, className: "mainTextGroupCont"}, 
+                        React.createElement("span", {className: "mainTextWord", style: styles}, word.str)
+                    ));
+                }), 
+                React.createElement("span", {className: "cursor"}, "|")), 
             React.createElement("div", {id: "textButtons"}, 
                 React.createElement("div", {className: "textButton", id: "backspaceButton", onClick: this.deleteChar.bind(this), ref: function (backspaceButton) { return _this.backspaceButton = backspaceButton; }}, 
                     React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
@@ -631,10 +606,13 @@ var ChooseSymbol = (function (_super) {
             slice.angle = (slice.angle + oppositeAngle) % 360;
             return slice;
         });
+        this.slices = [];
         return (React.createElement("div", {ref: function (mainCont) { _this.mainCont = mainCont; }, className: this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}, this.state.hidden ?
             '' :
             React.createElement("div", {className: "chooseSymbolCont"}, angles.map(function (slice) {
-                return React.createElement(Slice, {key: slice.index, data: slice, isBig: true, comm: _this.props.comm});
+                return React.createElement(Slice, {ref: function (slice) {
+                    _this.slices.push(slice);
+                }, key: slice.index, data: slice, isBig: true, comm: _this.props.comm});
             }))));
     };
     return ChooseSymbol;

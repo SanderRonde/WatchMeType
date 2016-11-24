@@ -402,10 +402,10 @@ html, body {
 	animation: shape-shift-before 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
 }
 
-@-webkit-keyframes shape-shift-after { to { -webkit-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
-@-moz-keyframes shape-shift-after { to { -moz-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
-@-o-keyframes shape-shift-after { to { -o-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
-@keyframes shape-shift-after { to { -webkit-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
+@-webkit-keyframes blink { to { -webkit-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
+@-moz-keyframes blink { to { -moz-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
+@-o-keyframes blink { to { -o-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
+@keyframes blink { to { -webkit-transform: skewX(45deg) translate(.875em, .875em); transform: skewX(45deg) translate(.875em, .875em) } }
 
 .spinner::after {
 	-webkit-transform: skewX(-80deg) translate(.875em, .875em);
@@ -413,10 +413,10 @@ html, body {
 	-o-transform: skewX(-80deg) translate(.875em, .875em);
 	-ms-transform: skewX(-80deg) translate(.875em, .875em);
 	transform: skewX(-80deg) translate(.875em, .875em);
-	-webkit-animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
-	-moz-animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
-	-o-animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
-	animation: shape-shift-after 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	-webkit-animation: blink 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	-moz-animation: blink 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	-o-animation: blink 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
+	animation: blink 1066.4ms cubic-bezier(.4, 0, .2, 1) infinite alternate;
 }
 
 #spinnerOverlay {
@@ -493,4 +493,57 @@ html, body {
 	top: 46vh;
 	left: 50vw;
 	position: absolute;
+}
+
+@keyframes blink {
+  from, to {
+    color: transparent;
+  }
+  50% {
+    color: white;
+  }
+}
+
+@-moz-keyframes blink {
+  from, to {
+    color: transparent;
+  }
+  50% {
+    color: white;
+  }
+}
+
+@-webkit-keyframes blink {
+  from, to {
+    color: transparent;
+  }
+  50% {
+    color: white;
+  }
+}
+
+@-ms-keyframes blink {
+  from, to {
+    color: transparent;
+  }
+  50% {
+    color: white;
+  }
+}
+
+@-o-keyframes blink {
+  from, to {
+    color: transparent;
+  }
+  50% {
+    color: white;
+  }
+}
+
+.cursor {
+	-webkit-animation: 1s blink step-end infinite;
+	-moz-animation: 1s blink step-end infinite;
+	-ms-animation: 1s blink step-end infinite;
+	-o-animation: 1s blink step-end infinite;
+	animation: 1s blink step-end infinite;
 }

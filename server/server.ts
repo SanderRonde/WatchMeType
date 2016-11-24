@@ -63,23 +63,12 @@ new Promise((resolve) => {
 	let lastPointable: string = null;
 	let hasNoEvents: boolean = true;
 
-	const controller = new Leap.Controller({
+	console.log('connecting to controller');
+	const controller = Leap.loop({
 		background: true,
-		optimizeHMD: false,
-		frameEventName: 'animationFrame'
-	})
-	.connect()
-	.on('connect', function() {
-		const origHandleData = this.connection.handleData;
-		this.connection.handleData = (data) => {
-			try {
-				return origHandleData.call(this, data);
-			} catch(e) {
-				console.log('skipped frame');
-			}
-		}
-	})
-	.on('animationFrame', (frame) => {
+		optimizeHMD: false
+	}, (frame) => {
+		//console.log('recieved frame', Date.now());
 		if (wsServer.connections.length === 0) {
 			return;
 		}

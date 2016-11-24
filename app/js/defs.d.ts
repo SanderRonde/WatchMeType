@@ -15,6 +15,12 @@ interface T9Defs {
 		words: Array<string>, currentWord: string, depth: number): Array<string>;
 }
 
+interface CircleArea {
+	radius: number;
+	x: number;
+	y: number;
+}
+
 interface ScreenPosition {
 	screenPosition(options?: {
 		positioning: string;
@@ -39,6 +45,7 @@ interface SymbolElement {
 		symbol: string;
 		value: string;
 	};
+	area?: CircleArea;
 	glow: HTMLElement;
 	opacity: number;
 	symbolCont: HTMLElement;
@@ -52,8 +59,6 @@ interface SymbolElement {
 		isBig?: boolean;
 	}
 	elName: 'Symbol';
-
-	onMouseOver(): void;
 
 	constructor: Function;
 	render(): JSX.Element;
@@ -100,7 +105,8 @@ declare const enum MainFaceCommType {
 	keyPressed = 0,
 	gesture = 1,
 	T9KeyPressed = 2,
-	resetSlices = 3
+	resetSlices = 3,
+	specificKeyPressed = 4
 } 
 
 declare const enum ControllerCommType {
@@ -134,5 +140,4 @@ interface CommHandlers {
 		data: Gesture|string|number): void;
 
 	sendMessageToController(type: ControllerCommType, data: string): void;
-	symbolHover(symbol: string|number): void;
 }

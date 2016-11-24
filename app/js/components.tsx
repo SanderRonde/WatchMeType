@@ -147,6 +147,7 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 		symbol: string;
 		value: string;
 	};
+	area?: CircleArea;
 	glow: HTMLElement;
 	opacity: number = 0;
 	symbolCont: HTMLElement;
@@ -191,13 +192,6 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 			}
 		});
 	}
-	onMouseOver() {
-		if (this.props.isBig) {
-			this.props.comm.symbolHover(this.props.data.symbol);
-
-			this.symbolCont.classList.add('hovered');
-		}
-	}
 	render() {
 		const styles = {
 			transform: `rotate(${-this.props.data.angle}deg)`
@@ -218,16 +212,29 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 			}
 		} else {
 			symbolData = getSymbol(this.props.data.index);
-			this.symbol = symbolData;
 		}
+		this.symbol = symbolData;
 
+		let symbolEl;
+		window.setTimeout(() => {
+			if (this.props.isBig) {
+				const bcr = symbolEl.getBoundingClientRect();
+				const vmin = Math.min(window.innerWidth, window.innerHeight) / 100;
+				this.area = {
+					x: bcr.left,
+					y: bcr.top + (vmin * 3.5),
+					radius: vmin * 10.5
+				};
+			}
+		}, 0);
 		return (
 			<div className={this.props.isBig ? 
 					'symbolCont big' : 'symbolCont'} 
 					ref={(symbolCont) => this.symbolCont = symbolCont}>
-				<div onMouseOver={this.onMouseOver.bind(this)}
-					className="symbolGlow" ref={(glow) => this.glow = glow}></div>
-				<div className="symbol" style={styles}>
+				<div className="symbolGlow" ref={(glow) => this.glow = glow}></div>
+				<div ref={(el) => {
+					symbolEl = el;
+				}} className="symbol" style={styles}>
 					{symbolData.isIcon ? 
 						<i className="material-icon">{symbolData.symbol}</i> :
 						symbolData.symbol}
@@ -466,8 +473,11 @@ class WatchScreen extends React.Component<any, any> {
 					}
 					break;
 				case MainFaceCommType.T9KeyPressed:
-					this.addNum(data as number);
-
+					this.addNum(data as number, false);
+					this._resetSlices();
+					break;
+				case MainFaceCommType.specificKeyPressed:
+					this.addNum(data, true);
 					this._resetSlices();
 					break;
 				case MainFaceCommType.resetSlices:
@@ -496,46 +506,31 @@ class WatchScreen extends React.Component<any, any> {
 		}, 100);
 	}
 
-	addChar(char: string) {
-		this.state = this.state || {
-			currentText: ''
-		};
-
-		const wasScrolledToBottom = this.mainTextCont.scrollTop === 
-			this.mainTextCont.scrollHeight;
-
-		this.setState({
-			currentText: this.state.currentText + char
-		});
-
-		if (wasScrolledToBottom) {
-			window.setTimeout(() => {
-				this.mainTextCont.scrollTop = this.mainTextCont.scrollHeight;			
-			}, 0);
-		}
-	}
-	addNum(num: number|string) {
+	addNum(num: number|string, isChar: boolean) {
 		this.state = this.state || {
 			currentNums: [],
 			currentText: ''
 		};
 
 		const lastChar = this.state.currentNums.slice(-1)[0];
-		if (num === ' ' && lastChar.type === 'char' && lastChar.data === ' ') {
+		if (num === ' ' && lastChar && lastChar.type === 'char' && lastChar.data === ' ') {
 			//Last character was a space and this one is a space as well,
 			//replace last character with a dot
 			this.state.currentNums[this.state.currentNums.length - 1].data = '.';
 			this.state.currentText = this.state.currentText.slice(0, -1) + '.';
 		}
 
-		const wasScrolledToBottom = this.mainTextCont.scrollTop === 
+		const wasScrolledToBottom = this.mainTextCont.scrollTop <= 
 			this.mainTextCont.scrollHeight;
 
 		const addedObj: {
 			type: 'T9'|'char'|'T9Caps';
 			data: number|string;
 		} = {} as any;
-		if (isCaps || isSymbol || typeof num === 'string') {
+		if (isChar) {
+			addedObj.type = 'char';
+			addedObj.data = num;
+		} else if (isCaps || isSymbol || typeof num === 'string') {
 			if (isCaps && !isSymbol) {
 				addedObj.type = 'T9Caps';
 				addedObj.data = num;	
@@ -556,8 +551,6 @@ class WatchScreen extends React.Component<any, any> {
 			this.props.t9Lib, splitNumString(newNums).pop());
 		oldStringSplit[oldStringSplit.length - 1] = this.suggestions[0];
 
-		console.log(splitNumString(newNums));
-
 		this.setState({
 			currentNums: newNums,
 			currentText: splitNumString(newNums).map((numstring) => {
@@ -572,8 +565,7 @@ class WatchScreen extends React.Component<any, any> {
 		}
 	}
 	addSpace() {
-		this.addChar(' ');
-		this.addNum(' ');
+		this.addNum(' ', true);
 	}
 	deleteChar() {
 		this.state = this.state || {
@@ -643,46 +635,22 @@ class WatchScreen extends React.Component<any, any> {
 		});
 	}
 	
-	_splitIntoWords(string: string): Array<{
+	_splitIntoWords(string: string, numstring: NumString): Array<{
 		type: 'caps-word'|'word'|'non-word';
 		str: string;
 	}> {
+		let index = 0;
 		const words: Array<{
 			type: 'caps-word'|'word'|'non-word';
 			str: string;
 		}> = [];
-		for (let i = 0; i < string.length; i++) {
-			const lastWord = words[words.length - 1] || { type: 'nothing' };
-			if (string.charCodeAt(i) >= 97 && string.charCodeAt(i) <= 122) {
-				if (lastWord.type === 'word') {
-					lastWord.str += string[i];
-				} else {
-					words.push({
-						type: 'word',
-						str: string[i]
-					});
-				}
-			} else if (string.charCodeAt(i) >= 65 && string.charCodeAt(i) <= 90) {
-				if (lastWord.type === 'caps-word') {
-					lastWord.str += string[i];
-				} else {
-					words.push({
-						type: 'caps-word',
-						str: string[i]
-					});
-				}
-			} else {
-				if (lastWord.type === 'non-word') {
-					lastWord.str += string[i];
-				} else {
-					words.push({
-						type: 'non-word',
-						str: string[i]
-					});
-				}
-			}
-		}
-
+		splitNumString(numstring).forEach((splitPart) => {
+			words.push({
+				type: splitPart.type === 'T9' ? 'word' : 
+					splitPart.type === 'T9Caps' ? 'caps-word' : 'non-word',
+				str: string.slice(index, index += splitPart.arr.length)
+			});
+		});
 		return words;
 	}
 
@@ -690,12 +658,16 @@ class WatchScreen extends React.Component<any, any> {
 		return (
 			<div id="mainScreen">
 				<div id="mainText" ref={(mainText) => this.mainTextCont = mainText}>
-					{this._splitIntoWords(this.state && this.state.currentText || '')
+					{this._splitIntoWords(this.state && this.state.currentText || '', 
+						this.state && this.state.currentNums || [])
 						.map((word, index, arr) => {
 							const styles: React.CSSProperties = {};
 							if (index === arr.length - 1 && word.type !== 'non-word') {
 								styles.textDecoration = 'underline';
 								return <span key={index} className="mainTextWord" style={styles}>{word.str}</span>;
+							} 
+							if (word.str === ' ') {
+								return <span key={index} className="mainTextSpace">&nbsp;</span>
 							}
 							return (
 								<span key={index} className="mainTextGroupCont">
@@ -703,6 +675,7 @@ class WatchScreen extends React.Component<any, any> {
 								</span>
 							);
 						})}
+					<span className="cursor">|</span>
 				</div>
 				<div id="textButtons">
 					<div className="textButton" id="backspaceButton"
@@ -800,6 +773,7 @@ export class ChooseSymbol extends React.Component<any, any> {
 		hidden: boolean;
 	}
 	mainCont: HTMLElement;
+	slices: Array<Slice>;
 
 	constructor(props) {
 		super(props);
@@ -839,6 +813,7 @@ export class ChooseSymbol extends React.Component<any, any> {
 				slice.angle = (slice.angle + oppositeAngle) % 360;
 				return slice;
 			});
+		this.slices = [];
 		return (
 			<div ref={(mainCont) => {this.mainCont = mainCont}}
 				className={this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}>
@@ -850,7 +825,9 @@ export class ChooseSymbol extends React.Component<any, any> {
 							angle: number;
 							symbol: string|number;
 						}) => {
-							return <Slice key={slice.index} data={slice}
+							return <Slice ref={(slice) => {
+								this.slices.push(slice);
+							}} key={slice.index} data={slice}
 								isBig={true} comm={this.props.comm} />;
 						})}
 					</div>

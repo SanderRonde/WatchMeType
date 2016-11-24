@@ -24,7 +24,9 @@ if (!SHOWDOT) {
 if (DEBUG) {
     console.log("Using debug mode");
 }
-var symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) * 0.4;
+var SYMBOL_RADIUS = Math.min(window.innerWidth, window.innerHeight * 0.98) * 0.4;
+var MAX_FINGER_RADIUS = Math.min(window.innerWidth, window.innerHeight * 0.98) *
+    (0.41 + (CHOOSE_SYMBOL_ACTIVATION / 100));
 var pressingKey = -1;
 var isLoading = true;
 var waitForReset = false;
@@ -52,6 +54,12 @@ function enterChooseSymbolMode(chars, angle) {
     waitForReset = true;
     chooseSymbolOverlay.addSymbols(chars, angle);
 }
+function isHoveringOver(area, pos) {
+    if (!area) {
+        return false;
+    }
+    return (Math.pow(pos.x - area.x, 2) + Math.pow(pos.y - area.y, 2) < Math.pow(area.radius, 2));
+}
 var comm = {
     _symbolListeners: [],
     addSymbolListener: function (angle, symbol, listener) {
@@ -68,26 +76,40 @@ var comm = {
         }
         gestureAngle = (gestureAngle + 90) % 360;
         var radius = radiusFromCenter(pos);
+        if (selectingT9LetterAngle !== -1) {
+            if (!waitForReset && radius >= SYMBOL_RADIUS &&
+                Math.abs(gestureAngle - selectingT9LetterAngle) <=
+                    CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE) {
+                chooseSymbolOverlay.hide();
+                selectingT9LetterAngle = -1;
+                waitForReset = true;
+                return;
+            }
+            else {
+                chooseSymbolOverlay.slices.forEach(function (slice) {
+                    if (!slice.child) {
+                        return;
+                    }
+                    if (isHoveringOver(slice.child.area, pos)) {
+                        slice.child.symbolCont.classList.add('toggled');
+                        comm.fireMainFaceListener(4, slice.child.symbol.symbol);
+                        chooseSymbolOverlay.hide();
+                        selectingT9LetterAngle = -1;
+                        waitForReset = true;
+                    }
+                });
+            }
+        }
         if (waitForReset) {
-            if (radius < symbolRadius * 0.5) {
+            if (radius < SYMBOL_RADIUS * 0.5) {
                 waitForReset = false;
             }
             else {
                 return;
             }
         }
-        if (selectingT9LetterAngle !== -1) {
-            if (radius >= symbolRadius &&
-                Math.abs(gestureAngle - selectingT9LetterAngle) <=
-                    CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE) {
-                chooseSymbolOverlay.hide();
-                selectingT9LetterAngle = -1;
-                waitForReset = true;
-            }
-            return;
-        }
-        if (radius >= symbolRadius) {
-            var maxGlowIntensity = getGlowIntensity(symbolRadius, radius);
+        if (radius >= SYMBOL_RADIUS) {
+            var maxGlowIntensity = getGlowIntensity(SYMBOL_RADIUS, radius);
             gestureAngle = (gestureAngle + (360 / 26)) % 360;
             if (maxGlowIntensity >= KEY_PRESSED_MIN_DISTANCE * 0.8) {
                 var toggledIndex = comm._symbolListeners.length - 1;
@@ -106,7 +128,7 @@ var comm = {
                 if (!broke) {
                     toggledIndex = lastSlice;
                 }
-                var displacedPixels = radius - symbolRadius;
+                var displacedPixels = radius - SYMBOL_RADIUS;
                 if (displacedPixels > CHOOSE_SYMBOL_ACTIVATION * VMIN) {
                     enterChooseSymbolMode(comm._symbolListeners[toggledIndex].element
                         .children.map(function (slice) {
@@ -145,12 +167,6 @@ var comm = {
                 alert("Sent message \"" + data + "\"");
                 break;
         }
-    },
-    symbolHover: function (symbol) {
-        comm.fireMainFaceListener(2, symbol);
-        chooseSymbolOverlay.hide();
-        selectingT9LetterAngle = -1;
-        waitForReset = true;
     }
 };
 var chooseSymbolOverlay = ReactDOM.render(React.createElement(components.ChooseSymbol, {
@@ -203,7 +219,7 @@ websocket.onmessage = function (event) {
     if (data.foundPointer) {
         var pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
         var radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
-        var radiusPx = radiusPercentage * symbolRadius;
+        var radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
         pointer.x = HALF_WINDOW_WIDTH +
             (Math.cos(pointer2DDirection) * radiusPx);
         pointer.y = HALF_WINDOW_HEIGHT +

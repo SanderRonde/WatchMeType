@@ -31,7 +31,9 @@ if (DEBUG) {
 	console.log(`Using debug mode`);
 }
 
-const symbolRadius = Math.min(window.innerWidth, window.innerHeight * 0.98) * 0.4;
+const SYMBOL_RADIUS = Math.min(window.innerWidth, window.innerHeight * 0.98) * 0.4;
+const MAX_FINGER_RADIUS = Math.min(window.innerWidth, window.innerHeight * 0.98) *
+	(0.41 + (CHOOSE_SYMBOL_ACTIVATION / 100));
 
 let pressingKey: number = -1;
 let isLoading: boolean = true;
@@ -68,6 +70,13 @@ function enterChooseSymbolMode(chars: Array<number|string>, angle: number) {
 	chooseSymbolOverlay.addSymbols(chars, angle);
 }
 
+function isHoveringOver(area: CircleArea, pos: PointerPosition): boolean {
+	if (!area) {
+		return false;
+	}
+	return (Math.pow(pos.x - area.x, 2) + Math.pow(pos.y - area.y, 2) < Math.pow(area.radius, 2));
+}
+
 const comm: CommHandlers = {
 	_symbolListeners: [],
 	addSymbolListener(angle, symbol, listener) {
@@ -87,27 +96,42 @@ const comm: CommHandlers = {
 
 		const radius = radiusFromCenter(pos);
 
-		if (waitForReset) {
-			if (radius < symbolRadius * 0.5) {
-				waitForReset = false;
-			} else {
-				return;
-			}
-		}
 		if (selectingT9LetterAngle !== -1) {
 			//Cancel if needed
-			if (radius >= symbolRadius &&
+			if (!waitForReset && radius >= SYMBOL_RADIUS &&
 				Math.abs(gestureAngle - selectingT9LetterAngle) <=
 					CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE) {
 				//Cancel this mode
 				chooseSymbolOverlay.hide();
 				selectingT9LetterAngle = -1;
 				waitForReset = true;
+				return;
+			} else {
+				//Check if the buttons are being hovered over
+				chooseSymbolOverlay.slices.forEach((slice) => {
+					if (!slice.child) {
+						return;
+					}
+					if (isHoveringOver(slice.child.area, pos)) {
+						slice.child.symbolCont.classList.add('toggled');
+						comm.fireMainFaceListener(MainFaceCommType.specificKeyPressed,
+							slice.child.symbol.symbol);
+						chooseSymbolOverlay.hide();
+						selectingT9LetterAngle = -1;
+						waitForReset = true;
+					}
+				});
 			}
-			return;
 		}
-		if (radius >= symbolRadius) {
-			const maxGlowIntensity = getGlowIntensity(symbolRadius, radius);
+		if (waitForReset) {
+			if (radius < SYMBOL_RADIUS * 0.5) {
+				waitForReset = false;
+			} else {
+				return;
+			}
+		}
+		if (radius >= SYMBOL_RADIUS) {
+			const maxGlowIntensity = getGlowIntensity(SYMBOL_RADIUS, radius);
 
 			gestureAngle = (gestureAngle + (360 / 26)) % 360;
 			if (maxGlowIntensity >= KEY_PRESSED_MIN_DISTANCE * 0.8) {
@@ -129,7 +153,7 @@ const comm: CommHandlers = {
 					toggledIndex = lastSlice;
 				}
 
-				const displacedPixels = radius - symbolRadius;
+				const displacedPixels = radius - SYMBOL_RADIUS;
 				if (displacedPixels > CHOOSE_SYMBOL_ACTIVATION * VMIN) {
 					//Enter choose-symbol mode
 					enterChooseSymbolMode((comm._symbolListeners[toggledIndex].element as T9SliceElement)
@@ -170,12 +194,6 @@ const comm: CommHandlers = {
 				alert(`Sent message "${data}"`);
 				break;
 		}
-	},
-	symbolHover(symbol: string|number) {
-		comm.fireMainFaceListener(MainFaceCommType.T9KeyPressed, symbol);
-		chooseSymbolOverlay.hide();
-		selectingT9LetterAngle = -1;
-		waitForReset = true;
 	}
 };
 
@@ -246,7 +264,7 @@ websocket.onmessage = (event) => {
 		const pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
 		const radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
 		
-		const radiusPx = radiusPercentage * symbolRadius;
+		const radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
 		pointer.x = HALF_WINDOW_WIDTH +
 			(Math.cos(pointer2DDirection) * radiusPx);
 		pointer.y = HALF_WINDOW_HEIGHT + 
