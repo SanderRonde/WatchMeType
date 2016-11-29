@@ -3,11 +3,11 @@ var http = require('http');
 var path = require('path');
 var express = require('express');
 var websocket = require('websocket');
-var Leap = require('leapjs');
 var gestureRecognition_1 = require('./gestureRecognition');
 var WebSocketServer = websocket.server;
 var Router = require('router');
 var finalHandler = require('finalhandler');
+var Leap = require('./libs/leapjs');
 var PORT = 1234;
 function getFinger(frame, order) {
     var pointables = frame.pointables;
@@ -51,7 +51,8 @@ new Promise(function (resolve) {
 }).then(function (wsServer) {
     var lastPointable = null;
     var hasNoEvents = true;
-    var controller = Leap.loop({
+    console.log('connecting to controller');
+    Leap.loop({
         background: true,
         optimizeHMD: false
     }, function (frame) {

@@ -12,6 +12,6 @@
         "server/gestureRecognition.ts",
 		"app/js/index.tsx",
 		"app/js/components.tsx",
-        "app/js/constants.ts"
+        "app/js/util.ts"
     ]
 }

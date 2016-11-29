@@ -10,10 +10,9 @@ module.exports = (function() {
         3: 'ghi',
         4: 'jkl',
         5: 'mno',
-        6: 'pqr',
-        7: 'stu',
-        8: 'vwx',
-        9: 'yz',
+        6: 'pqrs',
+        7: 'tuv',
+        8: 'wxyz'
     };
 
     function Word(word, occurrences) {

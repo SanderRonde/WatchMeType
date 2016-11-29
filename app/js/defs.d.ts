@@ -15,6 +15,12 @@ interface T9Defs {
 		words: Array<string>, currentWord: string, depth: number): Array<string>;
 }
 
+interface CircleArea {
+	radius: number;
+	x: number;
+	y: number;
+}
+
 interface ScreenPosition {
 	screenPosition(options?: {
 		positioning: string;
@@ -39,6 +45,7 @@ interface SymbolElement {
 		symbol: string;
 		value: string;
 	};
+	area?: CircleArea;
 	glow: HTMLElement;
 	opacity: number;
 	symbolCont: HTMLElement;
@@ -48,7 +55,8 @@ interface SymbolElement {
 		data: {
 			angle: number;
 			index: number;
-		}
+		};
+		isBig?: boolean;
 	}
 	elName: 'Symbol';
 
@@ -71,8 +79,7 @@ interface T9SliceElement {
 			angle: number;
 		}
 	};
-	centerSliceBackground: SVGElement;
-	colorTimeout: number;
+	centerSliceBackground: HTMLElement;
 	children: Array<SliceElement>;
 	elName: 'T9Slice';
 
@@ -97,7 +104,9 @@ declare const enum Gesture {
 declare const enum MainFaceCommType {
 	keyPressed = 0,
 	gesture = 1,
-	T9KeyPressed = 2
+	T9KeyPressed = 2,
+	resetSlices = 3,
+	specificKeyPressed = 4
 } 
 
 declare const enum ControllerCommType {
@@ -117,7 +126,7 @@ interface PosListenerData {
 	listener: PosListener;
 }
 
-type MainFaceListener = (type: MainFaceCommType, data: string|Gesture) => void; 
+type MainFaceListener = (type: MainFaceCommType, data?: string|Gesture) => void; 
 
 interface CommHandlers {
 	_symbolListeners: Array<PosListenerData>;

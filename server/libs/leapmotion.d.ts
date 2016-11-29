@@ -4,10 +4,10 @@ interface LeapNoPointer {
 }
 
 interface LeapPointerData {
-	foundPointer: true;
 	direction: VectorArr,
 	stabilizedTipPosition: VectorArr;
 	gesture?: Gesture;
+	foundPointer: true;
 }
 
 type WSData = LeapNoPointer|LeapPointerData;
@@ -16,8 +16,7 @@ type XYZ<T> = [T, T, T];
 
 type VectorArr = XYZ<number>;
 
-declare module "leapjs" {
-
+declare namespace LeapJS {
 	export interface LoopOptions {
 		/**
 		 * The host name or IP address of the WebSocket server providing Leap Motion
@@ -129,7 +128,7 @@ declare module "leapjs" {
 		length: number;
 		nextJoint: Array<number>;
 		prevJoint: Array<number>;
-		type: BoneType
+		type: BoneType;
 		width: number;
 		center(): VectorArr;
 		direction(): VectorArr;
@@ -140,7 +139,7 @@ declare module "leapjs" {
 			[number, number, number, number],
 			[number, number, number, number],
 			[number, number, number, number]
-		]
+		];
 	}
 
 	export const enum FingerName {
@@ -162,7 +161,7 @@ declare module "leapjs" {
 		metacarpal: Bone;
 		pipPosition: VectorArr;
 		proximal: Bone;
-		type: FingerName
+		type: FingerName;
 	}
 
 	export interface Hand {
@@ -264,6 +263,7 @@ declare module "leapjs" {
 
 	export class Controller {
 		new(options: LoopOptions);
+		constructor(options: LoopOptions);
 		frameEventName: 'animationFrame'|'deviceFrame';
 		connect(): Controller;
 		connected(): boolean;
@@ -284,6 +284,7 @@ declare module "leapjs" {
 		stopUsing(pluginName: string): Controller;
 
 		on(eventName: ControllerEvent, callback: (param1?: any, param2?: any) => void): Controller;
+		on(eventName: 'animationFrame', callback: (frame: Frame) => void): Controller;
 		on(eventName: 'blur', callback: () => void): Controller;
 		on(eventName: 'connect', callback: () => void): Controller;
 		on(eventName: 'deviceAttached', callback: (device: Device) => void): Controller;

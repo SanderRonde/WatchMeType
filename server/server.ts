@@ -1,21 +1,21 @@
 /// <reference path="../typings/index.d.ts" />
-/// <reference path="libs/leapmotion.d.ts" />
+/// <reference path="./libs/leapmotion.d.ts" />
 
 import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
 import * as express from 'express';
 import * as websocket from 'websocket';
-import * as Leap from 'leapjs';
 import recognizeGesture from './gestureRecognition';
 const WebSocketServer = websocket.server;
 const Router = require('router');
 const finalHandler = require('finalhandler');
+const Leap: typeof LeapJS = require('./libs/leapjs');
 
 const PORT = 1234;
 
-function getFinger(frame: Leap.Frame, order: Array<Leap.FingerName>
-	): Leap.Pointable {
+function getFinger(frame: LeapJS.Frame, order: Array<LeapJS.FingerName>
+	): LeapJS.Pointable {
 		const pointables = frame.pointables;
 		let index = 0;
 		let lastPointable = null;
@@ -35,7 +35,7 @@ new Promise((resolve) => {
 	router.use('/', express.static(path.join(__dirname, '../app'), {
 		maxAge: 60 * 60 * 24
 	}));
-	router.get('/', express)
+	router.get('/', express);
 
 	function reqHandler(req: http.IncomingMessage, res: http.ServerResponse) {
 		router(req, res, finalHandler(req, res));
@@ -61,9 +61,10 @@ new Promise((resolve) => {
 	});
 }).then((wsServer: websocket.server) => {
 	let lastPointable: string = null;
-	let hasNoEvents: boolean = true;
+	let hasNoEvents = true;
 
-	const controller = Leap.loop({
+	console.log('connecting to controller');
+	Leap.loop({
 		background: true,
 		optimizeHMD: false
 	}, (frame) => {
@@ -82,7 +83,7 @@ new Promise((resolve) => {
 				message.foundPointer = false;
 		} else {
 			message.foundPointer = true;
-			let pointable: Leap.Pointable;
+			let pointable: LeapJS.Pointable;
 			if (lastPointable && frame.pointable(lastPointable) &&
 				frame.pointable(lastPointable).valid &&
 				frame.finger(lastPointable).extended) {
