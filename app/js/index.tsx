@@ -12,7 +12,7 @@ const FINGER_ADJUSTMENT = 1.4;
 const VMIN = Math.min(window.innerWidth, window.innerHeight) / 100;
 const HALF_WINDOW_WIDTH = window.innerWidth / 2;
 const HALF_WINDOW_HEIGHT = window.innerHeight / 2;
-const CHOOSE_SYMBOL_ACTIVATION = 7
+const CHOOSE_SYMBOL_ACTIVATION = 14
 const CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE = 40;
 
 const t9: T9Defs = require('./libs/t9.js');
@@ -108,7 +108,7 @@ const comm: CommHandlers = {
 			} else {
 				//Check if the buttons are being hovered over
 				chooseSymbolOverlay.slices.forEach((slice) => {
-					if (!slice.child) {
+					if (!slice || !slice.child) {
 						return;
 					}
 					if (isHoveringOver(slice.child.area, pos)) {

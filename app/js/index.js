@@ -9,7 +9,7 @@ var FINGER_ADJUSTMENT = 1.4;
 var VMIN = Math.min(window.innerWidth, window.innerHeight) / 100;
 var HALF_WINDOW_WIDTH = window.innerWidth / 2;
 var HALF_WINDOW_HEIGHT = window.innerHeight / 2;
-var CHOOSE_SYMBOL_ACTIVATION = 7;
+var CHOOSE_SYMBOL_ACTIVATION = 14;
 var CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE = 40;
 var t9 = require('./libs/t9.js');
 var hashSplit = window.location.hash.slice(1).split('-').map(function (option) {
@@ -87,7 +87,7 @@ var comm = {
             }
             else {
                 chooseSymbolOverlay.slices.forEach(function (slice) {
-                    if (!slice.child) {
+                    if (!slice || !slice.child) {
                         return;
                     }
                     if (isHoveringOver(slice.child.area, pos)) {
