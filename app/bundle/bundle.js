@@ -831,7 +831,6 @@ var ChooseSymbol = (function (_super) {
             angle: (centerAngle + 180) % 360,
             index: 27
         };
-        console.log(cancelButtonData);
         return (React.createElement("div", {ref: function (mainCont) { _this.mainCont = mainCont; }, className: this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}, this.state.hidden ?
             '' :
             React.createElement("div", {className: "chooseSymbolCont"}, 

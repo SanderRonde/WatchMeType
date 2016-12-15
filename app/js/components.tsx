@@ -857,8 +857,6 @@ export class ChooseSymbol extends React.Component<any, any> {
 			index: 27
 		};
 
-		console.log(cancelButtonData);
-
 		return (
 			<div ref={(mainCont) => {this.mainCont = mainCont}}
 				className={this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}>
