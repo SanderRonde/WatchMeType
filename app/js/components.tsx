@@ -512,6 +512,10 @@ class WatchScreen extends React.Component<any, any> {
 						case 'ArrowDown':
 							this.cycleT9(true);
 							break;
+						case 'h':
+						case 'H':
+							this.toggleInterface();
+							break;
 					}
 					break;
 			}
@@ -537,6 +541,9 @@ class WatchScreen extends React.Component<any, any> {
 		}, 100);
 	}
 
+	toggleInterface() {
+		document.body.classList.toggle('hideInterface');
+	}
 	addNum(num: number|string, isChar: boolean) {
 		this.state = this.state || {
 			currentNums: [],

@@ -551,6 +551,10 @@ var WatchScreen = (function (_super) {
                         case 'ArrowDown':
                             _this.cycleT9(true);
                             break;
+                        case 'h':
+                        case 'H':
+                            _this.toggleInterface();
+                            break;
                     }
                     break;
             }
@@ -574,6 +578,9 @@ var WatchScreen = (function (_super) {
         window.setTimeout(function () {
             element.classList.remove('active');
         }, 100);
+    };
+    WatchScreen.prototype.toggleInterface = function () {
+        document.body.classList.toggle('hideInterface');
     };
     WatchScreen.prototype.addNum = function (num, isChar) {
         var _this = this;
