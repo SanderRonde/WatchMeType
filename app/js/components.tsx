@@ -5,6 +5,7 @@ import * as util from './util';
 type NumString = Array<{
 	type: 'T9'|'char'|'T9Caps',
 	data: number|string;
+	cycles: number;
 }>;
 
 const CIRCLE_DEGREES = 360;
@@ -57,7 +58,8 @@ const TEXT_CHARS: Array<{
 	symbol: string;
 	value: string;
 }> = ([
-	['space_bar', ' ']
+	['space_bar', ' '],
+	['close', '']
 ] as Array<[string, string]>).map((symbolPair) => {
 	return {
 		symbol: symbolPair[0],
@@ -161,6 +163,7 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 			symbol?: string|number;
 		};
 		isBig?: boolean;
+		isExit?: boolean;
 	}
 
 	constructor(props: {
@@ -191,6 +194,10 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 					break;
 			}
 		});
+	}
+	getClassName(): string {
+		return 'symbolCont' + (this.props.isBig ? ' big' : '') +
+			(this.props.isExit ? ' exit' : '');
 	}
 	render() {
 		const styles = {
@@ -228,15 +235,14 @@ class Symbol extends React.Component<any, any> implements SymbolElement {
 			}
 		}, 0);
 		return (
-			<div className={this.props.isBig ? 
-					'symbolCont big' : 'symbolCont'} 
+			<div className={this.getClassName()} 
 					ref={(symbolCont) => this.symbolCont = symbolCont}>
 				<div className="symbolGlow" ref={(glow) => this.glow = glow}></div>
 				<div ref={(el) => {
 					symbolEl = el;
 				}} className="symbol" style={styles}>
 					{symbolData.isIcon ? 
-						<i className="material-icon">{symbolData.symbol}</i> :
+						<i className="material-icon default-size">{symbolData.symbol}</i> :
 						symbolData.symbol}
 				</div>
 			</div>
@@ -251,6 +257,10 @@ class Slice extends React.Component<any, any> implements SliceElement {
 	constructor(props) {
 		super(props);
 	}
+	getClassName(): string {
+		return 'slice' + (this.props.isBig ? ' big' : '') +
+			(this.props.isExit ? ' exit' : '');
+	}
 	render() {
 		const styles = {
 			transform: `rotate(${this.props.data.angle}deg)`
@@ -258,10 +268,10 @@ class Slice extends React.Component<any, any> implements SliceElement {
 
 		return (
 			<div ref={(sliceEl) => {this.sliceEl = sliceEl}} className={
-				this.props.isBig ? 'slice big' : 'slice'
+				this.getClassName()
 			} style={styles}>
 				<Symbol ref={SymbolEl => this.child = SymbolEl} isBig={this.props.isBig}
-					data={this.props.data} comm={this.props.comm} />
+					isExit={this.props.isExit} data={this.props.data} comm={this.props.comm} />
 			</div>
 		);
 	}
@@ -380,6 +390,7 @@ class T9Slice extends React.Component<any, any> implements T9SliceElement {
 function splitNumString(numstring: NumString): Array<{
 	type: 'T9'|'char'|'T9Caps';
 	arr: Array<string|number>;
+	cycles: number;
 }> {
 	if (numstring.length === 0) {
 		return [];
@@ -389,9 +400,11 @@ function splitNumString(numstring: NumString): Array<{
 	const arr: Array<{
 		type: 'T9'|'char'|'T9Caps';
 		arr: Array<string|number>;
+		cycles: number
 	}> = [{
 		type: prevType,
-		arr: []
+		arr: [],
+		cycles: numstring[0].cycles
 	}];
 
 	for (let i = 0; i < numstring.length; i++) {
@@ -401,7 +414,8 @@ function splitNumString(numstring: NumString): Array<{
 			prevType = numstring[i].type; 
 			arr.push({
 				type: numstring[i].type,
-				arr: [numstring[i].data]
+				arr: [numstring[i].data],
+				cycles: numstring[i].cycles
 			});
 		}
 	}
@@ -411,6 +425,7 @@ function splitNumString(numstring: NumString): Array<{
 function predictNumString(t9Lib: T9Defs, numstring: {
 	type: 'T9'|'char'|'T9Caps';
 	arr: Array<string|number>;
+	cycles: number;
 }): Array<string> {
 	const isCaps = numstring.type === 'T9Caps';
 	if (numstring.type === 'T9' || isCaps) {
@@ -483,6 +498,22 @@ class WatchScreen extends React.Component<any, any> {
 				case MainFaceCommType.resetSlices:
 					this._resetSlices();
 					break;
+				case MainFaceCommType.watchFaceCommand:
+					switch (data as string) {
+						case 'Backspace':
+							this.deleteChar();
+							break;
+						case ' ':
+							this.addSpace();
+							break;
+						case 'ArrowUp':
+							this.cycleT9(false);
+							break;
+						case 'ArrowDown':
+							this.cycleT9(true);
+							break;
+					}
+					break;
 			}
 		});
 	}
@@ -526,7 +557,10 @@ class WatchScreen extends React.Component<any, any> {
 		const addedObj: {
 			type: 'T9'|'char'|'T9Caps';
 			data: number|string;
-		} = {} as any;
+			cycles: number;
+		} = {
+			cycles: 0
+		} as any;
 		if (isChar) {
 			addedObj.type = 'char';
 			addedObj.data = num;
@@ -554,7 +588,9 @@ class WatchScreen extends React.Component<any, any> {
 		this.setState({
 			currentNums: newNums,
 			currentText: splitNumString(newNums).map((numstring) => {
-				return predictNumString(this.props.t9Lib, numstring)[0];
+				const predictions = predictNumString(this.props.t9Lib, numstring);
+				return predictions[(numstring.cycles + predictions.length)
+					% predictions.length];
 			}).join('')
 		});
 
@@ -582,7 +618,9 @@ class WatchScreen extends React.Component<any, any> {
 		this.setState({
 			currentNums: newNums,
 			currentText: isEmpty ? '' : splitNumString(newNums).map((numstring) => {
-				return predictNumString(this.props.t9Lib, numstring)[0];
+				const predictions = predictNumString(this.props.t9Lib, numstring);
+				return predictions[(numstring.cycles + predictions.length)
+					% predictions.length];
 			}).join('')
 		});
 	}
@@ -592,7 +630,7 @@ class WatchScreen extends React.Component<any, any> {
 		
 		this.setState({
 			currentText: '',
-			currentNums: ''
+			currentNums: []
 		});
 	}
 	toggleCapitalization() {
@@ -620,16 +658,25 @@ class WatchScreen extends React.Component<any, any> {
 			return;
 		}
 
+		const lastWordLength = splitNumString(this.state.currentNums).pop().arr.length;
+		const lastWordStart = this.state.currentNums.length - lastWordLength;
+
+		//Change the cycled state of the new num strings
+		this.state.currentNums.forEach((num, index) => {
+			if (index >= lastWordStart) {
+				num.cycles += (reverse ? -1 : 1);
+			}
+		});
+
 		this.setState({
 			currentNums: this.state.currentNums,
 			//First slice off the last X characters, where X is equal to the 
 			//length of the last "word" using splitNumString
-			currentText: this.state.currentText.slice(0, 
-				-splitNumString(this.state.currentNums).pop().arr.length) +
+			currentText: this.state.currentText.slice(0, lastWordStart) +
 					//Then append the next or previous suggestion modulo the length
 					//to prevent overflows
 					this.suggestions[
-						(this.suggestions.indexOf(this.state.currentText) +
+						(this.suggestions.indexOf(this.state.currentText.slice(lastWordStart)) +
 							this.suggestions.length +
 							(reverse ? -1 : 1)) % this.suggestions.length]
 		});
@@ -678,14 +725,6 @@ class WatchScreen extends React.Component<any, any> {
 					<span className="cursor">|</span>
 				</div>
 				<div id="textButtons">
-					<div className="textButton" id="backspaceButton"
-						onClick={this.deleteChar.bind(this)}
-						ref={backspaceButton => this.backspaceButton = backspaceButton}>
-						<svg height="48" viewBox="0 0 24 24" width="48" xmlns="http://www.w3.org/2000/svg">
-							<path d="M0 0h24v24H0z" fill="none"/>
-							<path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/>
-						</svg>
-					</div>
 					<div className="textButton" id="capitalizeButton"
 						onClick={this.toggleCapitalization.bind(this)}
 						ref={(capButton) => this.capitalizeButton = capButton}>
@@ -698,22 +737,6 @@ class WatchScreen extends React.Component<any, any> {
 						onClick={this.toggleSymbols.bind(this)}
 						ref={(symbolButton) => this.symbolButton = symbolButton}>
 						<div className="textSymbol">123</div>
-					</div>
-					<div className="textButton" id="cycleButton"
-						onClick={this.cycleT9.bind(this)}
-						ref={(cycleButton) => this.cycleButton = cycleButton}>
-						<svg height="48" viewBox="0 0 24 24" width="48" xmlns="http://www.w3.org/2000/svg">
-							<path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/>
-							<path d="M0 0h24v24H0z" fill="none"/>
-						</svg>
-					</div>
-					<div className="textButton" id="spacebarButton"
-						onClick={this.addSpace.bind(this)}
-						ref={spacebarButton => this.spacebarButton = spacebarButton}>
-						<svg height="56" viewBox="0 0 24 24" width="56" xmlns="http://www.w3.org/2000/svg">
-							<path d="M0 0h24v24H0V0z" fill="none"/>
-							<path d="M18 9v4H6V9H4v6h16V9z"/>
-						</svg>
 					</div>
 					<div className="textButton" id="sendButton"
 						onClick={this.sendPress.bind(this)}>
@@ -814,6 +837,21 @@ export class ChooseSymbol extends React.Component<any, any> {
 				return slice;
 			});
 		this.slices = [];
+		
+		const centerAngle = this.state.chars.length > 0 ?
+			this.state.chars.length % 2 === 0 ?
+				(angles[angles.length / 2].angle + 
+				angles[(angles.length / 2) - 1].angle) / 2 :
+					angles[Math.floor(angles.length / 2)].angle :
+						0;
+
+		const cancelButtonData = {
+			angle: (centerAngle + 180) % 360,
+			index: 27
+		};
+
+		console.log(cancelButtonData);
+
 		return (
 			<div ref={(mainCont) => {this.mainCont = mainCont}}
 				className={this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}>
@@ -830,6 +868,11 @@ export class ChooseSymbol extends React.Component<any, any> {
 							}} key={slice.index} data={slice}
 								isBig={true} comm={this.props.comm} />;
 						})}
+						<div className="chooseSymbolCancel">
+							<Slice data={cancelButtonData}
+								isExit={true} isBig={true}
+								comm={this.props.comm} />
+						</div>
 					</div>
 				}
 			</div>

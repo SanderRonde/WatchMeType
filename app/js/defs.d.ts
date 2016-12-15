@@ -57,6 +57,7 @@ interface SymbolElement {
 			index: number;
 		};
 		isBig?: boolean;
+		isExit?: boolean;
 	}
 	elName: 'Symbol';
 
@@ -106,7 +107,8 @@ declare const enum MainFaceCommType {
 	gesture = 1,
 	T9KeyPressed = 2,
 	resetSlices = 3,
-	specificKeyPressed = 4
+	specificKeyPressed = 4,
+	watchFaceCommand = 5
 } 
 
 declare const enum ControllerCommType {

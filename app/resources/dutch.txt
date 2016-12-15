@@ -16,6 +16,7 @@ BS
 BV
 cd
 cv
+da
 dc
 de
 dj
@@ -4052,6 +4053,7 @@ hakte
 halen
 haler
 Hales
+hallo
 halst
 halte
 halve

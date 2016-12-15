@@ -35,7 +35,8 @@ function divideCircle(maxAngle, entries) {
     return res;
 }
 var TEXT_CHARS = [
-    ['space_bar', ' ']
+    ['space_bar', ' '],
+    ['close', '']
 ].map(function (symbolPair) {
     return {
         symbol: symbolPair[0],
@@ -131,6 +132,10 @@ var Symbol = (function (_super) {
             }
         });
     }
+    Symbol.prototype.getClassName = function () {
+        return 'symbolCont' + (this.props.isBig ? ' big' : '') +
+            (this.props.isExit ? ' exit' : '');
+    };
     Symbol.prototype.render = function () {
         var _this = this;
         var styles = {
@@ -167,13 +172,12 @@ var Symbol = (function (_super) {
                 };
             }
         }, 0);
-        return (React.createElement("div", {className: this.props.isBig ?
-            'symbolCont big' : 'symbolCont', ref: function (symbolCont) { return _this.symbolCont = symbolCont; }}, 
+        return (React.createElement("div", {className: this.getClassName(), ref: function (symbolCont) { return _this.symbolCont = symbolCont; }}, 
             React.createElement("div", {className: "symbolGlow", ref: function (glow) { return _this.glow = glow; }}), 
             React.createElement("div", {ref: function (el) {
                 symbolEl = el;
             }, className: "symbol", style: styles}, symbolData.isIcon ?
-                React.createElement("i", {className: "material-icon"}, symbolData.symbol) :
+                React.createElement("i", {className: "material-icon default-size"}, symbolData.symbol) :
                 symbolData.symbol)));
     };
     return Symbol;
@@ -183,13 +187,17 @@ var Slice = (function (_super) {
     function Slice(props) {
         _super.call(this, props);
     }
+    Slice.prototype.getClassName = function () {
+        return 'slice' + (this.props.isBig ? ' big' : '') +
+            (this.props.isExit ? ' exit' : '');
+    };
     Slice.prototype.render = function () {
         var _this = this;
         var styles = {
             transform: "rotate(" + this.props.data.angle + "deg)"
         };
-        return (React.createElement("div", {ref: function (sliceEl) { _this.sliceEl = sliceEl; }, className: this.props.isBig ? 'slice big' : 'slice', style: styles}, 
-            React.createElement(Symbol, {ref: function (SymbolEl) { return _this.child = SymbolEl; }, isBig: this.props.isBig, data: this.props.data, comm: this.props.comm})
+        return (React.createElement("div", {ref: function (sliceEl) { _this.sliceEl = sliceEl; }, className: this.getClassName(), style: styles}, 
+            React.createElement(Symbol, {ref: function (SymbolEl) { return _this.child = SymbolEl; }, isBig: this.props.isBig, isExit: this.props.isExit, data: this.props.data, comm: this.props.comm})
         ));
     };
     return Slice;
@@ -275,7 +283,8 @@ function splitNumString(numstring) {
     var prevType = numstring[0].type;
     var arr = [{
             type: prevType,
-            arr: []
+            arr: [],
+            cycles: numstring[0].cycles
         }];
     for (var i = 0; i < numstring.length; i++) {
         if (prevType === numstring[i].type) {
@@ -285,7 +294,8 @@ function splitNumString(numstring) {
             prevType = numstring[i].type;
             arr.push({
                 type: numstring[i].type,
-                arr: [numstring[i].data]
+                arr: [numstring[i].data],
+                cycles: numstring[i].cycles
             });
         }
     }
@@ -344,6 +354,22 @@ var WatchScreen = (function (_super) {
                 case 3:
                     _this._resetSlices();
                     break;
+                case 5:
+                    switch (data) {
+                        case 'Backspace':
+                            _this.deleteChar();
+                            break;
+                        case ' ':
+                            _this.addSpace();
+                            break;
+                        case 'ArrowUp':
+                            _this.cycleT9(false);
+                            break;
+                        case 'ArrowDown':
+                            _this.cycleT9(true);
+                            break;
+                    }
+                    break;
             }
         });
     }
@@ -379,7 +405,9 @@ var WatchScreen = (function (_super) {
         }
         var wasScrolledToBottom = this.mainTextCont.scrollTop <=
             this.mainTextCont.scrollHeight;
-        var addedObj = {};
+        var addedObj = {
+            cycles: 0
+        };
         if (isChar) {
             addedObj.type = 'char';
             addedObj.data = num;
@@ -406,7 +434,9 @@ var WatchScreen = (function (_super) {
         this.setState({
             currentNums: newNums,
             currentText: splitNumString(newNums).map(function (numstring) {
-                return predictNumString(_this.props.t9Lib, numstring)[0];
+                var predictions = predictNumString(_this.props.t9Lib, numstring);
+                return predictions[(numstring.cycles + predictions.length)
+                    % predictions.length];
             }).join('')
         });
         if (wasScrolledToBottom) {
@@ -432,7 +462,9 @@ var WatchScreen = (function (_super) {
         this.setState({
             currentNums: newNums,
             currentText: isEmpty ? '' : splitNumString(newNums).map(function (numstring) {
-                return predictNumString(_this.props.t9Lib, numstring)[0];
+                var predictions = predictNumString(_this.props.t9Lib, numstring);
+                return predictions[(numstring.cycles + predictions.length)
+                    % predictions.length];
             }).join('')
         });
     };
@@ -440,7 +472,7 @@ var WatchScreen = (function (_super) {
         this.props.comm.sendMessageToController(0, this.state.currentText);
         this.setState({
             currentText: '',
-            currentNums: ''
+            currentNums: []
         });
     };
     WatchScreen.prototype.toggleCapitalization = function () {
@@ -467,10 +499,17 @@ var WatchScreen = (function (_super) {
         if (this.suggestions.length <= 1) {
             return;
         }
+        var lastWordLength = splitNumString(this.state.currentNums).pop().arr.length;
+        var lastWordStart = this.state.currentNums.length - lastWordLength;
+        this.state.currentNums.forEach(function (num, index) {
+            if (index >= lastWordStart) {
+                num.cycles += (reverse ? -1 : 1);
+            }
+        });
         this.setState({
             currentNums: this.state.currentNums,
-            currentText: this.state.currentText.slice(0, -splitNumString(this.state.currentNums).pop().arr.length) +
-                this.suggestions[(this.suggestions.indexOf(this.state.currentText) +
+            currentText: this.state.currentText.slice(0, lastWordStart) +
+                this.suggestions[(this.suggestions.indexOf(this.state.currentText.slice(lastWordStart)) +
                     this.suggestions.length +
                     (reverse ? -1 : 1)) % this.suggestions.length]
         });
@@ -507,11 +546,6 @@ var WatchScreen = (function (_super) {
                 }), 
                 React.createElement("span", {className: "cursor"}, "|")), 
             React.createElement("div", {id: "textButtons"}, 
-                React.createElement("div", {className: "textButton", id: "backspaceButton", onClick: this.deleteChar.bind(this), ref: function (backspaceButton) { return _this.backspaceButton = backspaceButton; }}, 
-                    React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
-                        React.createElement("path", {d: "M0 0h24v24H0z", fill: "none"}), 
-                        React.createElement("path", {d: "M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"}))
-                ), 
                 React.createElement("div", {className: "textButton", id: "capitalizeButton", onClick: this.toggleCapitalization.bind(this), ref: function (capButton) { return _this.capitalizeButton = capButton; }}, 
                     React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
                         React.createElement("path", {d: "M0 0h24v24H0z", fill: "none"}), 
@@ -519,16 +553,6 @@ var WatchScreen = (function (_super) {
                 ), 
                 React.createElement("div", {className: "textButton", id: "symbolsButton", onClick: this.toggleSymbols.bind(this), ref: function (symbolButton) { return _this.symbolButton = symbolButton; }}, 
                     React.createElement("div", {className: "textSymbol"}, "123")
-                ), 
-                React.createElement("div", {className: "textButton", id: "cycleButton", onClick: this.cycleT9.bind(this), ref: function (cycleButton) { return _this.cycleButton = cycleButton; }}, 
-                    React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
-                        React.createElement("path", {d: "M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"}), 
-                        React.createElement("path", {d: "M0 0h24v24H0z", fill: "none"}))
-                ), 
-                React.createElement("div", {className: "textButton", id: "spacebarButton", onClick: this.addSpace.bind(this), ref: function (spacebarButton) { return _this.spacebarButton = spacebarButton; }}, 
-                    React.createElement("svg", {height: "56", viewBox: "0 0 24 24", width: "56", xmlns: "http://www.w3.org/2000/svg"}, 
-                        React.createElement("path", {d: "M0 0h24v24H0V0z", fill: "none"}), 
-                        React.createElement("path", {d: "M18 9v4H6V9H4v6h16V9z"}))
                 ), 
                 React.createElement("div", {className: "textButton", id: "sendButton", onClick: this.sendPress.bind(this)}, 
                     React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
@@ -607,13 +631,28 @@ var ChooseSymbol = (function (_super) {
             return slice;
         });
         this.slices = [];
+        var centerAngle = this.state.chars.length > 0 ?
+            this.state.chars.length % 2 === 0 ?
+                (angles[angles.length / 2].angle +
+                    angles[(angles.length / 2) - 1].angle) / 2 :
+                angles[Math.floor(angles.length / 2)].angle :
+            0;
+        var cancelButtonData = {
+            angle: (centerAngle + 180) % 360,
+            index: 27
+        };
+        console.log(cancelButtonData);
         return (React.createElement("div", {ref: function (mainCont) { _this.mainCont = mainCont; }, className: this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}, this.state.hidden ?
             '' :
-            React.createElement("div", {className: "chooseSymbolCont"}, angles.map(function (slice) {
-                return React.createElement(Slice, {ref: function (slice) {
-                    _this.slices.push(slice);
-                }, key: slice.index, data: slice, isBig: true, comm: _this.props.comm});
-            }))));
+            React.createElement("div", {className: "chooseSymbolCont"}, 
+                angles.map(function (slice) {
+                    return React.createElement(Slice, {ref: function (slice) {
+                        _this.slices.push(slice);
+                    }, key: slice.index, data: slice, isBig: true, comm: _this.props.comm});
+                }), 
+                React.createElement("div", {className: "chooseSymbolCancel"}, 
+                    React.createElement(Slice, {data: cancelButtonData, isExit: true, isBig: true, comm: this.props.comm})
+                ))));
     };
     return ChooseSymbol;
 }(React.Component));

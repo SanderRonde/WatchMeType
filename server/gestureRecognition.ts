@@ -1,6 +1,4 @@
 /// <reference path="libs/leapmotion.d.ts" />
-import * as Leap from 'leapjs';
-
 interface Vector {
 	x: number;
 	y: number;
@@ -53,7 +51,7 @@ function trimTrackedGestures() {
 	}
 }
 
-export default function recognize(frame: Leap.Frame): Gesture {
+export default function recognize(frame: LeapJS.Frame): Gesture {
 	let returnVal = Gesture.none;
 	frame.gestures.forEach((gesture) => {
 		if (gesture.type === 'swipe' && trackedGestures.indexOf(gesture.id) === -1 ) {

@@ -85,6 +85,15 @@ html, body {
 	pointer-events: all;
 }
 
+.slice.exit {
+	width: 32vmin;
+	pointer-events: all;
+}
+
+.slice.exit .symbol {
+	margin-left: -20px;
+}
+
 .symbolCont.big > .symbolGlow {
 	background-color: rgb(0, 103, 241);
 	border: 1vmin solid white;
@@ -94,7 +103,11 @@ html, body {
 	position: absolute;
 	margin-top: -7vmin;
 	margin-left: -9.5vmin;
-	transition: background-color 250ms ease-out; 
+	transition: background-color 250ms ease-out;
+}
+
+.symbolCont.exit > .symbolGlow {
+	background-color: rgb(200, 20, 20);
 }
 
 .symbolCont.big.hovered > .symbolGlow {
@@ -107,7 +120,7 @@ html, body {
 
 #textButtons {
 	display: flex;
-	justify-content: space-between;
+	justify-content: space-around;
 	margin-top: 20px;
 	pointer-events: all;
 }
@@ -148,11 +161,11 @@ html, body {
 	fill: white;
 	border-radius: 50%;
 	padding: 1.5vmin;
-	height: 5vmin;
+	height: 8vmin;
 	cursor: pointer;
-	transition: background-color 250ms ease-in-out,
-		fill 250ms ease-in-out,
-		color 250ms ease-in-out;
+	transition: background-color 50ms ease-in-out,
+		fill 50ms ease-in-out,
+		color 50ms ease-in-out;
 	user-select: none;
 }
 
@@ -172,8 +185,8 @@ html, body {
 }
 
 .textButton > svg {
-	height: 5vmin;
-	width: 5vmin;
+	height: 8vmin;
+	width: 8vmin;
 }
 
 #sendButton > svg {
@@ -546,4 +559,15 @@ html, body {
 	-ms-animation: 1s blink step-end infinite;
 	-o-animation: 1s blink step-end infinite;
 	animation: 1s blink step-end infinite;
+}
+
+i.default-size {
+	font-size: 100%;
+}
+
+#symbolsButton > .textSymbol {
+	width: 8vmin;
+	margin-top: 1.2vmin;
+	text-align: center;
+	font-size: 120%;
 }

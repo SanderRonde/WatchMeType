@@ -8,11 +8,11 @@ import * as util from './util'
 
 const KEY_PRESSED_MIN_DISTANCE = 90;
 const KEY_PRESSED_MAX_ANGLE_DIFF = 10;
-const FINGER_ADJUSTMENT = 1.4;
+const FINGER_ADJUSTMENT = 1.3;
 const VMIN = Math.min(window.innerWidth, window.innerHeight) / 100;
 const HALF_WINDOW_WIDTH = window.innerWidth / 2;
 const HALF_WINDOW_HEIGHT = window.innerHeight / 2;
-const CHOOSE_SYMBOL_ACTIVATION = 14
+const CHOOSE_SYMBOL_ACTIVATION = 25;
 const CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE = 40;
 
 const t9: T9Defs = require('./libs/t9.js');
@@ -21,7 +21,8 @@ const hashSplit = window.location.hash.slice(1).split('-').map((option) => {
 	return option.toLowerCase();
 });
 const DEBUG = hashSplit.indexOf('d') > -1;
-const LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
+const LANG = (hashSplit.indexOf('nl') > -1 ||
+	hashSplit.indexOf('dutch') > -1) ? 'dutch' : 'english';
 const SHOWDOT = hashSplit.indexOf('dot') > -1;
 if (!SHOWDOT) {
 	document.getElementById('pointerDot').style.display = 'none';
@@ -195,6 +196,10 @@ const comm: CommHandlers = {
 		}
 	}
 };
+
+document.body.addEventListener('keydown', (e) => {
+	comm.fireMainFaceListener(MainFaceCommType.watchFaceCommand, e.key);
+});
 
 const chooseSymbolOverlay: components.ChooseSymbol = 
 	ReactDOM.render(React.createElement(components.ChooseSymbol, {

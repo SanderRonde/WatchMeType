@@ -5,18 +5,19 @@ var components = require('./components');
 var util = require('./util');
 var KEY_PRESSED_MIN_DISTANCE = 90;
 var KEY_PRESSED_MAX_ANGLE_DIFF = 10;
-var FINGER_ADJUSTMENT = 1.4;
+var FINGER_ADJUSTMENT = 1.3;
 var VMIN = Math.min(window.innerWidth, window.innerHeight) / 100;
 var HALF_WINDOW_WIDTH = window.innerWidth / 2;
 var HALF_WINDOW_HEIGHT = window.innerHeight / 2;
-var CHOOSE_SYMBOL_ACTIVATION = 14;
+var CHOOSE_SYMBOL_ACTIVATION = 25;
 var CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE = 40;
 var t9 = require('./libs/t9.js');
 var hashSplit = window.location.hash.slice(1).split('-').map(function (option) {
     return option.toLowerCase();
 });
 var DEBUG = hashSplit.indexOf('d') > -1;
-var LANG = hashSplit.indexOf('nl') > -1 ? 'dutch' : 'english';
+var LANG = (hashSplit.indexOf('nl') > -1 ||
+    hashSplit.indexOf('dutch') > -1) ? 'dutch' : 'english';
 var SHOWDOT = hashSplit.indexOf('dot') > -1;
 if (!SHOWDOT) {
     document.getElementById('pointerDot').style.display = 'none';
@@ -169,6 +170,9 @@ var comm = {
         }
     }
 };
+document.body.addEventListener('keydown', function (e) {
+    comm.fireMainFaceListener(5, e.key);
+});
 var chooseSymbolOverlay = ReactDOM.render(React.createElement(components.ChooseSymbol, {
     comm: comm
 }), document.getElementById('chooseSymbolOverlay'));
