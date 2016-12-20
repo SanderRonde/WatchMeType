@@ -14,4 +14,4 @@ The parameters should be seperated by dashes and can be in any order.
 * Dutch: Chooses the dutch language pack
 * English: Chooses the english language pack
 * Dot: Show a red dot that represents the cursor
-* Notutorial: Don't show the tutorial
+* Showtutorial: Show the tutorial

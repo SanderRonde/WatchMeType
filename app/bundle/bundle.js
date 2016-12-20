@@ -860,7 +860,7 @@ var DEBUG = hashSplit.indexOf('d') > -1;
 var LANG = (hashSplit.indexOf('nl') > -1 ||
     hashSplit.indexOf('dutch') > -1) ? 'dutch' : 'english';
 var SHOWDOT = hashSplit.indexOf('dot') > -1;
-var SHOWTUTORIAL = hashSplit.indexOf('notutorial') === -1;
+var SHOWTUTORIAL = hashSplit.indexOf('showtutorial') > -1;
 if (!SHOWDOT) {
     document.getElementById('pointerDot').style.display = 'none';
 }

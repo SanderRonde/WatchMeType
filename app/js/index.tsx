@@ -24,7 +24,7 @@ const DEBUG = hashSplit.indexOf('d') > -1;
 const LANG = (hashSplit.indexOf('nl') > -1 ||
 	hashSplit.indexOf('dutch') > -1) ? 'dutch' : 'english';
 const SHOWDOT = hashSplit.indexOf('dot') > -1;
-const SHOWTUTORIAL = hashSplit.indexOf('notutorial') === -1
+const SHOWTUTORIAL = hashSplit.indexOf('showtutorial') > -1;
 if (!SHOWDOT) {
 	document.getElementById('pointerDot').style.display = 'none';
 }
