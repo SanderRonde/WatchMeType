@@ -1,9 +1,9 @@
 "use strict";
-var http = require('http');
-var path = require('path');
-var express = require('express');
-var websocket = require('websocket');
-var gestureRecognition_1 = require('./gestureRecognition');
+var http = require("http");
+var path = require("path");
+var express = require("express");
+var websocket = require("websocket");
+var gestureRecognition_1 = require("./gestureRecognition");
 var WebSocketServer = websocket.server;
 var Router = require('router');
 var finalHandler = require('finalhandler');

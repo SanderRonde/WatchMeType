@@ -1,8 +1,8 @@
 "use strict";
-var React = require('react');
-var ReactDOM = require('react-dom');
-var components = require('./components');
-var util = require('./util');
+var React = require("react");
+var ReactDOM = require("react-dom");
+var components = require("./components");
+var util = require("./util");
 var KEY_PRESSED_MIN_DISTANCE = 90;
 var KEY_PRESSED_MAX_ANGLE_DIFF = 10;
 var FINGER_ADJUSTMENT = 1.3;
@@ -19,6 +19,7 @@ var DEBUG = hashSplit.indexOf('d') > -1;
 var LANG = (hashSplit.indexOf('nl') > -1 ||
     hashSplit.indexOf('dutch') > -1) ? 'dutch' : 'english';
 var SHOWDOT = hashSplit.indexOf('dot') > -1;
+var SHOWTUTORIAL = hashSplit.indexOf('notutorial') === -1;
 if (!SHOWDOT) {
     document.getElementById('pointerDot').style.display = 'none';
 }
@@ -32,6 +33,10 @@ var pressingKey = -1;
 var isLoading = true;
 var waitForReset = false;
 var selectingT9LetterAngle = -1;
+var tutorialVisible = SHOWTUTORIAL;
+if (!SHOWTUTORIAL) {
+    document.querySelector('#tutorial').classList.add('hidden');
+}
 var pointer = {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2
@@ -171,7 +176,12 @@ var comm = {
     }
 };
 document.body.addEventListener('keydown', function (e) {
-    comm.fireMainFaceListener(5, e.key);
+    if (tutorialVisible) {
+        goToNextTutorialSlide();
+    }
+    else {
+        comm.fireMainFaceListener(5, e.key);
+    }
 });
 var chooseSymbolOverlay = ReactDOM.render(React.createElement(components.ChooseSymbol, {
     comm: comm
@@ -184,8 +194,8 @@ var pointerDot = document.getElementById('pointerDot');
 function updatePointerPos() {
     if (lastPointerPos.x !== pointer.x || lastPointerPos.y !== pointer.y) {
         if (SHOWDOT) {
-            pointerDot.style.top = (pointer.y - 7.5) + "px";
-            pointerDot.style.left = (pointer.x - 7.5) + "px";
+            pointerDot.style.top = pointer.y - 7.5 + "px";
+            pointerDot.style.left = pointer.x - 7.5 + "px";
         }
         comm.fireSymbolListeners(pointer);
         lastPointerPos.x = pointer.x;
@@ -247,5 +257,29 @@ util.fetch("/resources/" + LANG + ".txt").then(function (res) {
 }).then(function (text) {
     t9.init(text);
     finishLoading();
+});
+var currentTutorialSlide = 0;
+var exitEl = document.querySelector('#closeTutorialButton');
+var carrouselEl = document.querySelector('#tutorialContents');
+function goToTutorialSlide(index) {
+    index = Math.min(index, 5);
+    carrouselEl.style.transform = "translateX(calc(-60vmin * " + index + "))";
+    dots[currentTutorialSlide].classList.remove('active');
+    dots[index].classList.add('active');
+    currentTutorialSlide = index;
+    exitEl.classList[index === 5 ? 'add' : 'remove']('visible');
+}
+function goToNextTutorialSlide() {
+    goToTutorialSlide(currentTutorialSlide + 1);
+}
+var dots = Array.prototype.slice.call(document.querySelectorAll('.tutorialButton'))
+    .map(function (dot) {
+    dot.addEventListener('click', function () {
+        goToTutorialSlide(~~dot.getAttribute('data-index'));
+    });
+    return dot;
+});
+exitEl.addEventListener('click', function () {
+    document.querySelector('#tutorial').classList.add('hidden');
 });
 //# sourceMappingURL=index.js.map

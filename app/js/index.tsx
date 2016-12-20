@@ -24,6 +24,7 @@ const DEBUG = hashSplit.indexOf('d') > -1;
 const LANG = (hashSplit.indexOf('nl') > -1 ||
 	hashSplit.indexOf('dutch') > -1) ? 'dutch' : 'english';
 const SHOWDOT = hashSplit.indexOf('dot') > -1;
+const SHOWTUTORIAL = hashSplit.indexOf('notutorial') === -1
 if (!SHOWDOT) {
 	document.getElementById('pointerDot').style.display = 'none';
 }
@@ -39,6 +40,11 @@ let pressingKey: number = -1;
 let isLoading: boolean = true;
 let waitForReset: boolean = false;
 let selectingT9LetterAngle: number = -1;
+let tutorialVisible: boolean = SHOWTUTORIAL;
+
+if (!SHOWTUTORIAL) {
+	document.querySelector('#tutorial').classList.add('hidden');
+}
 
 const pointer: PointerPosition = {
 	x: window.innerWidth / 2,
@@ -198,7 +204,11 @@ const comm: CommHandlers = {
 };
 
 document.body.addEventListener('keydown', (e) => {
-	comm.fireMainFaceListener(MainFaceCommType.watchFaceCommand, e.key);
+	if (tutorialVisible) {
+		goToNextTutorialSlide();
+	} else {
+		comm.fireMainFaceListener(MainFaceCommType.watchFaceCommand, e.key);
+	}
 });
 
 const chooseSymbolOverlay: components.ChooseSymbol = 
@@ -294,4 +304,35 @@ util.fetch(`/resources/${LANG}.txt`).then((res) => {
 }).then((text) => {
 	t9.init(text);
 	finishLoading();
+});
+
+let currentTutorialSlide: number = 0;
+const exitEl = document.querySelector('#closeTutorialButton') as HTMLElement;
+const carrouselEl = document.querySelector('#tutorialContents') as HTMLElement;
+function goToTutorialSlide(index: number) {
+	index = Math.min(index, 5);
+	carrouselEl.style.transform = `translateX(calc(-60vmin * ${index}))`;
+	dots[currentTutorialSlide].classList.remove('active');
+	dots[index].classList.add('active');
+	currentTutorialSlide = index;
+
+	exitEl.classList[index === 5 ? 'add' : 'remove']('visible');
+}
+
+function goToNextTutorialSlide() {
+	goToTutorialSlide(currentTutorialSlide + 1);
+}
+
+const dots: [
+	HTMLElement, HTMLElement, HTMLElement, HTMLElement, HTMLElement, HTMLElement
+] = Array.prototype.slice.call(document.querySelectorAll('.tutorialButton'))
+	.map((dot: HTMLElement) => {
+		dot.addEventListener('click', () => {
+			goToTutorialSlide(~~dot.getAttribute('data-index'));
+		});
+		return dot;
+	});
+
+exitEl.addEventListener('click', () => {
+	document.querySelector('#tutorial').classList.add('hidden');
 });

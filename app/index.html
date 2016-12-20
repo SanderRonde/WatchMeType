@@ -22,8 +22,10 @@
 			<div class="horizontalCenterer">
 				<div class="verticalCenterer">
 					<div class="centered">
-						<div id="loadingSpinner" class="spinner is-active" data-options="multicolor large"
-							role="progressbar" aria-valuetext="Loading…"></div>
+						<div id="spinnerCircle">
+							<div id="loadingSpinner" class="spinner is-active" data-options="multicolor large"
+								role="progressbar" aria-valuetext="Loading…"></div>
+						</div>
 						<div id="loadingText">Loading...</div>
 					</div>
 				</div>
@@ -31,6 +33,33 @@
 		</div>
 		<div id="mainContainer"></div>
 		<div id="chooseSymbolOverlay"></div>
+		<div id="tutorial">
+			<div class="horizontalCenterer">
+				<div class="verticalCenterer">
+					<div id="tutorialCarrousel">
+						<div id="tutorialContentCutter">
+							<div id="closeTutorialButton">CLOSE</div>
+							<div id="tutorialContents">
+								<div class="tutorialSlide"></div>
+								<div class="tutorialSlide"></div>
+								<div class="tutorialSlide"></div>
+								<div class="tutorialSlide"></div>
+								<div class="tutorialSlide"></div>
+								<div class="tutorialSlide"></div>
+							</div>
+						</div>
+						<div id="tutorialButtons">
+							<div class="tutorialButton active" data-index="0"></div>
+							<div class="tutorialButton" data-index="1"></div>
+							<div class="tutorialButton" data-index="2"></div>
+							<div class="tutorialButton" data-index="3"></div>
+							<div class="tutorialButton" data-index="4"></div>
+							<div class="tutorialButton" data-index="5"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<script src="bundle/bundle.js"></script>
 	</body>
 </html>

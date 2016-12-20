@@ -4,8 +4,8 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var React = require('react');
-var util = require('./util');
+var React = require("react");
+var util = require("./util");
 var CIRCLE_DEGREES = 360;
 var SLICES = 8;
 var T9_SLICE_DEGREES = CIRCLE_DEGREES / SLICES;
@@ -105,15 +105,14 @@ var CIRCLE_SLICES = 26;
 var Symbol = (function (_super) {
     __extends(Symbol, _super);
     function Symbol(props) {
-        var _this = this;
-        _super.call(this, props);
-        this.elName = 'Symbol';
-        this.opacity = 0;
-        this.firedTimeout = -1;
-        this.state = this.state || {};
-        this.state.isCapitalized = false;
-        this.state.isTextSymbol = false;
-        props.isBig || props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
+        var _this = _super.call(this, props) || this;
+        _this.elName = 'Symbol';
+        _this.opacity = 0;
+        _this.firedTimeout = -1;
+        _this.state = _this.state || {};
+        _this.state.isCapitalized = false;
+        _this.state.isTextSymbol = false;
+        props.isBig || props.comm.addSymbolListener(_this.props.data.angle + 90, _this, function (type, data) {
             switch (type) {
                 case 0:
                     if (data < 0 || data !== _this.opacity) {
@@ -131,6 +130,7 @@ var Symbol = (function (_super) {
                     break;
             }
         });
+        return _this;
     }
     Symbol.prototype.getClassName = function () {
         return 'symbolCont' + (this.props.isBig ? ' big' : '') +
@@ -172,12 +172,12 @@ var Symbol = (function (_super) {
                 };
             }
         }, 0);
-        return (React.createElement("div", {className: this.getClassName(), ref: function (symbolCont) { return _this.symbolCont = symbolCont; }}, 
-            React.createElement("div", {className: "symbolGlow", ref: function (glow) { return _this.glow = glow; }}), 
-            React.createElement("div", {ref: function (el) {
-                symbolEl = el;
-            }, className: "symbol", style: styles}, symbolData.isIcon ?
-                React.createElement("i", {className: "material-icon default-size"}, symbolData.symbol) :
+        return (React.createElement("div", { className: this.getClassName(), ref: function (symbolCont) { return _this.symbolCont = symbolCont; } },
+            React.createElement("div", { className: "symbolGlow", ref: function (glow) { return _this.glow = glow; } }),
+            React.createElement("div", { ref: function (el) {
+                    symbolEl = el;
+                }, className: "symbol", style: styles }, symbolData.isIcon ?
+                React.createElement("i", { className: "material-icon default-size" }, symbolData.symbol) :
                 symbolData.symbol)));
     };
     return Symbol;
@@ -185,7 +185,7 @@ var Symbol = (function (_super) {
 var Slice = (function (_super) {
     __extends(Slice, _super);
     function Slice(props) {
-        _super.call(this, props);
+        return _super.call(this, props) || this;
     }
     Slice.prototype.getClassName = function () {
         return 'slice' + (this.props.isBig ? ' big' : '') +
@@ -196,9 +196,8 @@ var Slice = (function (_super) {
         var styles = {
             transform: "rotate(" + this.props.data.angle + "deg)"
         };
-        return (React.createElement("div", {ref: function (sliceEl) { _this.sliceEl = sliceEl; }, className: this.getClassName(), style: styles}, 
-            React.createElement(Symbol, {ref: function (SymbolEl) { return _this.child = SymbolEl; }, isBig: this.props.isBig, isExit: this.props.isExit, data: this.props.data, comm: this.props.comm})
-        ));
+        return (React.createElement("div", { ref: function (sliceEl) { _this.sliceEl = sliceEl; }, className: this.getClassName(), style: styles },
+            React.createElement(Symbol, { ref: function (SymbolEl) { return _this.child = SymbolEl; }, isBig: this.props.isBig, isExit: this.props.isExit, data: this.props.data, comm: this.props.comm })));
     };
     return Slice;
 }(React.Component));
@@ -225,11 +224,10 @@ function getSvgPathForSlice(centerAngle, size) {
 var T9Slice = (function (_super) {
     __extends(T9Slice, _super);
     function T9Slice(props) {
-        var _this = this;
-        _super.call(this, props);
-        this.elName = 'T9Slice';
-        this.children = [];
-        props.comm.addSymbolListener(this.props.data.angle + 90, this, function (type, data) {
+        var _this = _super.call(this, props) || this;
+        _this.elName = 'T9Slice';
+        _this.children = [];
+        props.comm.addSymbolListener(_this.props.data.angle + 90, _this, function (type, data) {
             switch (type) {
                 case 1:
                     var displacedPixels_1 = data;
@@ -246,6 +244,7 @@ var T9Slice = (function (_super) {
                     break;
             }
         });
+        return _this;
     }
     T9Slice.prototype.render = function () {
         var _this = this;
@@ -261,17 +260,16 @@ var T9Slice = (function (_super) {
         });
         var centerSliceSize = T9_SLICE_DEGREES - 1;
         var startAngle = 3.75 + (this.props.data.index * 45);
-        return (React.createElement("div", {className: "T9SliceCont"}, 
-            React.createElement("div", {className: "T9SliceBackground"}, 
-                React.createElement("svg", {viewBox: "0 0 300 300"}, 
-                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(startAngle - (centerSliceSize / 2), 1)}), 
-                    React.createElement("path", {className: "T9SliceBorder", d: getSvgPathForSlice(startAngle + (centerSliceSize / 2), 1)})), 
-                React.createElement("svg", {viewBox: "0 0 300 300", ref: function (centerSliceBackground) { return _this.centerSliceBackground =
-                    centerSliceBackground; }}, 
-                    React.createElement("path", {className: "T9SliceCenter", d: getSvgPathForSlice(startAngle, centerSliceSize)})
-                )), 
+        return (React.createElement("div", { className: "T9SliceCont" },
+            React.createElement("div", { className: "T9SliceBackground" },
+                React.createElement("svg", { viewBox: "0 0 300 300" },
+                    React.createElement("path", { className: "T9SliceBorder", d: getSvgPathForSlice(startAngle - (centerSliceSize / 2), 1) }),
+                    React.createElement("path", { className: "T9SliceBorder", d: getSvgPathForSlice(startAngle + (centerSliceSize / 2), 1) })),
+                React.createElement("svg", { viewBox: "0 0 300 300", ref: function (centerSliceBackground) { return _this.centerSliceBackground =
+                        centerSliceBackground; } },
+                    React.createElement("path", { className: "T9SliceCenter", d: getSvgPathForSlice(startAngle, centerSliceSize) }))),
             sliceData.map(function (slice) {
-                return React.createElement(Slice, {ref: function (sliceEl) { _this.children.push(sliceEl); }, key: slice.index, data: slice, comm: _this.props.comm});
+                return React.createElement(Slice, { ref: function (sliceEl) { _this.children.push(sliceEl); }, key: slice.index, data: slice, comm: _this.props.comm });
             })));
     };
     return T9Slice;
@@ -317,10 +315,9 @@ function predictNumString(t9Lib, numstring) {
 var WatchScreen = (function (_super) {
     __extends(WatchScreen, _super);
     function WatchScreen(props) {
-        var _this = this;
-        _super.call(this, props);
-        this.upperCase = false;
-        this.symbols = false;
+        var _this = _super.call(this, props) || this;
+        _this.upperCase = false;
+        _this.symbols = false;
         props.comm.addMainFaceListener(function (type, data) {
             switch (type) {
                 case 1:
@@ -376,6 +373,7 @@ var WatchScreen = (function (_super) {
                     break;
             }
         });
+        return _this;
     }
     WatchScreen.prototype._resetSlices = function () {
         this.props.parent.slices.forEach(function (slice) {
@@ -535,64 +533,57 @@ var WatchScreen = (function (_super) {
     };
     WatchScreen.prototype.render = function () {
         var _this = this;
-        return (React.createElement("div", {id: "mainScreen"}, 
-            React.createElement("div", {id: "mainText", ref: function (mainText) { return _this.mainTextCont = mainText; }}, 
+        return (React.createElement("div", { id: "mainScreen" },
+            React.createElement("div", { id: "mainText", ref: function (mainText) { return _this.mainTextCont = mainText; } },
                 this._splitIntoWords(this.state && this.state.currentText || '', this.state && this.state.currentNums || [])
                     .map(function (word, index, arr) {
                     var styles = {};
                     if (index === arr.length - 1 && word.type !== 'non-word') {
                         styles.textDecoration = 'underline';
-                        return React.createElement("span", {key: index, className: "mainTextWord", style: styles}, word.str);
+                        return React.createElement("span", { key: index, className: "mainTextWord", style: styles }, word.str);
                     }
                     if (word.str === ' ') {
-                        return React.createElement("span", {key: index, className: "mainTextSpace"}, " ");
+                        return React.createElement("span", { key: index, className: "mainTextSpace" }, "\u00A0");
                     }
-                    return (React.createElement("span", {key: index, className: "mainTextGroupCont"}, 
-                        React.createElement("span", {className: "mainTextWord", style: styles}, word.str)
-                    ));
-                }), 
-                React.createElement("span", {className: "cursor"}, "|")), 
-            React.createElement("div", {id: "textButtons"}, 
-                React.createElement("div", {className: "textButton", id: "capitalizeButton", onClick: this.toggleCapitalization.bind(this), ref: function (capButton) { return _this.capitalizeButton = capButton; }}, 
-                    React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
-                        React.createElement("path", {d: "M0 0h24v24H0z", fill: "none"}), 
-                        React.createElement("path", {d: "M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"}))
-                ), 
-                React.createElement("div", {className: "textButton", id: "symbolsButton", onClick: this.toggleSymbols.bind(this), ref: function (symbolButton) { return _this.symbolButton = symbolButton; }}, 
-                    React.createElement("div", {className: "textSymbol"}, "123")
-                ), 
-                React.createElement("div", {className: "textButton", id: "sendButton", onClick: this.sendPress.bind(this)}, 
-                    React.createElement("svg", {height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg"}, 
-                        React.createElement("path", {d: "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"}), 
-                        React.createElement("path", {d: "M0 0h24v24H0z", fill: "none"}))
-                ))));
+                    return (React.createElement("span", { key: index, className: "mainTextGroupCont" },
+                        React.createElement("span", { className: "mainTextWord", style: styles }, word.str)));
+                }),
+                React.createElement("span", { className: "cursor" }, "|")),
+            React.createElement("div", { id: "textButtons" },
+                React.createElement("div", { className: "textButton", id: "capitalizeButton", onClick: this.toggleCapitalization.bind(this), ref: function (capButton) { return _this.capitalizeButton = capButton; } },
+                    React.createElement("svg", { height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg" },
+                        React.createElement("path", { d: "M0 0h24v24H0z", fill: "none" }),
+                        React.createElement("path", { d: "M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z" }))),
+                React.createElement("div", { className: "textButton", id: "symbolsButton", onClick: this.toggleSymbols.bind(this), ref: function (symbolButton) { return _this.symbolButton = symbolButton; } },
+                    React.createElement("div", { className: "textSymbol" }, "123")),
+                React.createElement("div", { className: "textButton", id: "sendButton", onClick: this.sendPress.bind(this) },
+                    React.createElement("svg", { height: "48", viewBox: "0 0 24 24", width: "48", xmlns: "http://www.w3.org/2000/svg" },
+                        React.createElement("path", { d: "M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" }),
+                        React.createElement("path", { d: "M0 0h24v24H0z", fill: "none" }))))));
     };
     return WatchScreen;
 }(React.Component));
 var MainFace = (function (_super) {
     __extends(MainFace, _super);
     function MainFace(props) {
-        _super.call(this, props);
-        this.slices = [];
+        var _this = _super.call(this, props) || this;
+        _this.slices = [];
+        return _this;
     }
     MainFace.prototype.render = function () {
         var _this = this;
-        return (React.createElement("div", {id: "mainFace"}, 
-            React.createElement("div", {id: "faceCenter"}, 
-                React.createElement("div", {className: "horizontalCenterer"}, 
-                    React.createElement("div", {className: "verticalCenterer"}, 
-                        React.createElement("div", {className: "centered"}, 
-                            React.createElement("div", {id: "faceSlices"}, divideCircle(CIRCLE_DEGREES, SLICES)
+        return (React.createElement("div", { id: "mainFace" },
+            React.createElement("div", { id: "faceCenter" },
+                React.createElement("div", { className: "horizontalCenterer" },
+                    React.createElement("div", { className: "verticalCenterer" },
+                        React.createElement("div", { className: "centered" },
+                            React.createElement("div", { id: "faceSlices" }, divideCircle(CIRCLE_DEGREES, SLICES)
                                 .map(function (slice, index, arr) {
-                                return React.createElement(T9Slice, {ref: function (slice) {
-                                    _this.slices.push(slice);
-                                }, key: slice.index, data: slice, comm: _this.props.comm});
-                            })), 
-                            React.createElement(WatchScreen, {parent: this, t9Lib: this.props.t9Lib, comm: this.props.comm}))
-                    )
-                )
-            )
-        ));
+                                return React.createElement(T9Slice, { ref: function (slice) {
+                                        _this.slices.push(slice);
+                                    }, key: slice.index, data: slice, comm: _this.props.comm });
+                            })),
+                            React.createElement(WatchScreen, { parent: this, t9Lib: this.props.t9Lib, comm: this.props.comm })))))));
     };
     return MainFace;
 }(React.Component));
@@ -601,12 +592,13 @@ exports.MainFace = MainFace;
 var ChooseSymbol = (function (_super) {
     __extends(ChooseSymbol, _super);
     function ChooseSymbol(props) {
-        _super.call(this, props);
-        this.state = {
+        var _this = _super.call(this, props) || this;
+        _this.state = {
             chars: [],
             angle: 0,
             hidden: true
         };
+        return _this;
     }
     ChooseSymbol.prototype.addSymbols = function (chars, angle) {
         this.setState({
@@ -648,17 +640,16 @@ var ChooseSymbol = (function (_super) {
             angle: (centerAngle + 180) % 360,
             index: 27
         };
-        return (React.createElement("div", {ref: function (mainCont) { _this.mainCont = mainCont; }, className: this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer'}, this.state.hidden ?
+        return (React.createElement("div", { ref: function (mainCont) { _this.mainCont = mainCont; }, className: this.state.hidden ? 'chooseSymbolContainer hidden' : 'chooseSymbolContainer' }, this.state.hidden ?
             '' :
-            React.createElement("div", {className: "chooseSymbolCont"}, 
+            React.createElement("div", { className: "chooseSymbolCont" },
                 angles.map(function (slice) {
-                    return React.createElement(Slice, {ref: function (slice) {
-                        _this.slices.push(slice);
-                    }, key: slice.index, data: slice, isBig: true, comm: _this.props.comm});
-                }), 
-                React.createElement("div", {className: "chooseSymbolCancel"}, 
-                    React.createElement(Slice, {data: cancelButtonData, isExit: true, isBig: true, comm: this.props.comm})
-                ))));
+                    return React.createElement(Slice, { ref: function (slice) {
+                            _this.slices.push(slice);
+                        }, key: slice.index, data: slice, isBig: true, comm: _this.props.comm });
+                }),
+                React.createElement("div", { className: "chooseSymbolCancel" },
+                    React.createElement(Slice, { data: cancelButtonData, isExit: true, isBig: true, comm: this.props.comm })))));
     };
     return ChooseSymbol;
 }(React.Component));

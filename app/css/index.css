@@ -445,7 +445,7 @@ html, body {
 
 #loadingSpinner {
 	font-size: 15vmin;
-	background-color: rgb(16, 16, 16);
+	background-color: white;
 }
 
 #loadingText {
@@ -575,4 +575,115 @@ i.default-size {
 .hideInterface #faceSlices,
 .hideInterface #chooseSymbolOverlay {
 	visibility: hidden;
+}
+
+#tutorial {
+	width: 100vw;
+	height: 100vh;
+	position: absolute;
+	transition: opacity 250ms ease-in-out;
+	background-color: rgba(0, 0, 0, 0.6);
+}
+
+#tutorialContents {
+	display: flex;
+	justify-content: center;
+	flex-direction: row;
+	width: 360vmin;
+	height: 60vmin;
+	transition: transform 250ms ease-in-out;
+}
+
+#tutorialContentCutter {
+	border-radius: 50%;
+	width: 60vmin;
+	height: 60vmin;
+	background-color: rgb(0, 103, 241);
+	overflow: hidden;
+	z-index: 10000;
+	position: relative;
+}
+
+.tutorialSlide {
+	width: 60vmin;
+	height: 60vmin;
+	background-repeat: round;
+}
+
+.tutorialSlide:nth-child(1) {
+	background-image: url('../tutorialImages/img1.png');
+}
+
+.tutorialSlide:nth-child(2) {
+	background-image: url('../tutorialImages/img2.png');
+}
+
+.tutorialSlide:nth-child(3) {
+	background-image: url('../tutorialImages/img3.png');
+}
+
+.tutorialSlide:nth-child(4) {
+	background-image: url('../tutorialImages/img4.png');
+}
+
+.tutorialSlide:nth-child(5) {
+	background-image: url('../tutorialImages/img5.png');
+}
+
+.tutorialSlide:nth-child(6) {
+	background-image: url('../tutorialImages/img6.png');
+}
+
+#tutorialContentCutter:after {content: '';position: absolute;left: initial;top: 0;border-radius: 100%;width: 60vmin;height: 60vmin;box-shadow: 0px 0px 0px 2000px;}
+
+#tutorialButtons {
+	position: absolute;
+	margin-top: -10vmin;
+	margin-left: calc(30vmin - 4vmin);
+	display: flex;
+	justify-content: center;
+}
+
+.tutorialButton {
+	width: 1.2vmin;
+	height: 1.2vmin;
+	border-radius: 50%;
+	background-color: rgb(78, 149, 245);
+	z-index: 10000;
+	margin-right: 0.5vmin;
+	transition: background-color 250ms ease-in-out;
+	cursor: pointer;
+}
+
+.tutorialButton.active {
+	background-color:white;
+}
+
+#tutorial.hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+
+#spinnerCircle {
+	background-color: white;
+	border-radius: 50%;
+	padding: 2vmin;
+}
+
+#closeTutorialButton {
+	margin-top: 53vmin;
+	margin-left: 27vmin;
+	color: white;
+	box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+	padding: 0.5vmin;
+	display: inline-block;
+	font-size: 120%;
+	cursor: pointer;
+	z-index: 1000;
+	opacity: 0;
+	position: absolute;
+}
+
+#closeTutorialButton.visible {
+	opacity: 1;
 }
