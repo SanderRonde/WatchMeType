@@ -72,7 +72,9 @@ new Promise((resolve) => {
 			return;
 		}
 
-		const message: WSData = {} as any;
+		const message: WSData = {
+			handshake: false
+		} as any;
 		message.gesture = recognizeGesture(frame);
 
 		if (frame.pointables.length === 0 ||

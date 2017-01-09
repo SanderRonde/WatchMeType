@@ -1,4 +1,6 @@
 "use strict";
+/// <reference path="libs/leapmotion.d.ts" />
+/// <reference path="../app/js/defs.d.ts" />
 function formatVector(vector) {
     return {
         x: vector[0],
@@ -24,6 +26,7 @@ function get2DCone(vec) {
     }
 }
 function get3DCone(vec) {
+    //First get the direction in a 2D enviroment
     var cone2D = get2DCone(vec);
     var biggestFactor = (cone2D === Cone.Right || cone2D === Cone.Left ?
         Math.abs(vec.x) : Math.abs(vec.y));
@@ -41,25 +44,26 @@ function trimTrackedGestures() {
     }
 }
 function recognize(frame) {
-    var returnVal = 0;
+    var returnVal = 0 /* none */;
     frame.gestures.forEach(function (gesture) {
         if (gesture.type === 'swipe' && trackedGestures.indexOf(gesture.id) === -1) {
             trackedGestures.push(gesture.id);
             trimTrackedGestures();
             var vector = formatVector(gesture.direction);
+            //Determine the general direction the movement was in
             var cone = get3DCone(vector);
             switch (cone) {
                 case Cone.Top:
-                    returnVal = 3;
+                    returnVal = 3 /* cycleT9Up */;
                     break;
                 case Cone.Right:
-                    returnVal = 2;
+                    returnVal = 2 /* space */;
                     break;
                 case Cone.Bottom:
-                    returnVal = 4;
+                    returnVal = 4 /* cycleT9Down */;
                     break;
                 case Cone.Left:
-                    returnVal = 1;
+                    returnVal = 1 /* clear */;
                     break;
             }
         }

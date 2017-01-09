@@ -244,7 +244,7 @@ if (DEBUG) {
 	}
 }
 
-const websocket = new WebSocket('ws://localhost:1234', 'echo-protocol');
+const websocket = new WebSocket(`ws://${location.host}`, 'echo-protocol');
 const pointerIcon = document.getElementById('pointerSpotted');
 function getPointerRadius(vector: VectorArr, directionAngle: number): number {
 	//Max from the center is bending your finger about 30 degrees,
@@ -267,43 +267,49 @@ function handleGestures(data: WSData): boolean {
 	comm.fireMainFaceListener(MainFaceCommType.gesture, data.gesture);
 }
 
-websocket.onmessage = (event) => {
-	const stringifiedData: string = event.data;
-	const data = JSON.parse(stringifiedData) as WSData;
+Promise.all([
+	new Promise((resolve) => {
+		websocket.onopen = (event) => {
+			resolve();
+		};
+		websocket.onmessage = (event) => {
+			const stringifiedData: string = event.data;
+			const data = JSON.parse(stringifiedData) as WSData;
 
-	const spottedGesture = handleGestures(data);
+			const spottedGesture = handleGestures(data);
+			if (data.foundPointer) {
+				//Get the amount of degrees that the finger is moving to the outside
+				const pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
+				const radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
+				
+				const radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
+				pointer.x = HALF_WINDOW_WIDTH +
+					(Math.cos(pointer2DDirection) * radiusPx);
+				pointer.y = HALF_WINDOW_HEIGHT + 
+					(Math.sin(pointer2DDirection) * radiusPx);
 
-	if (data.foundPointer) {
-		//Get the amount of degrees that the finger is moving to the outside
-		const pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
-		const radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
-		
-		const radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
-		pointer.x = HALF_WINDOW_WIDTH +
-			(Math.cos(pointer2DDirection) * radiusPx);
-		pointer.y = HALF_WINDOW_HEIGHT + 
-			(Math.sin(pointer2DDirection) * radiusPx);
-
-		pointerIcon.classList.remove('noPointer');
-	} else if (!spottedGesture) {
-		pointerIcon.classList.add('noPointer');
-	}
-}
-
-function finishLoading() {
+				pointerIcon.classList.remove('noPointer');
+			} else if (!spottedGesture) {
+				pointerIcon.classList.add('noPointer');
+			}
+		}
+	}),
+	new Promise((resolve) => {
+		util.fetch(`/resources/${LANG}.txt`).then((res) => {
+			return res.text();
+		}).then((text) => {
+			t9.init(text);
+			resolve();
+		});
+	})
+]).then(() => {
+	//Finish loading
 	document.getElementById('spinnerOverlay').style.opacity = '0';
 	window.setTimeout(() => {
 		document.getElementById('spinnerOverlay').style.display = 'none';
 		isLoading = false;
 		window.requestAnimationFrame(updatePointerPos);
 	}, 500);
-}
-
-util.fetch(`/resources/${LANG}.txt`).then((res) => {
-	return res.text();
-}).then((text) => {
-	t9.init(text);
-	finishLoading();
 });
 
 let currentTutorialSlide: number = 0;

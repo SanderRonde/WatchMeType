@@ -1,4 +1,5 @@
 /// <reference path="libs/leapmotion.d.ts" />
+/// <reference path="../app/js/defs.d.ts" />
 interface Vector {
 	x: number;
 	y: number;

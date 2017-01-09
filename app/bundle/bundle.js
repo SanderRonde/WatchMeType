@@ -206,6 +206,14 @@ var T9Keymap = {
 var isCaps = false;
 var isSymbol = false;
 var T9Arr = util.objToArr(T9Keymap);
+/**
+ * Divides the circle in "entries" seperate slices
+ *
+ * @param {number} maxAngle - The total degrees
+ * @param {number} entries - The amount of slices
+ *
+ * @return {Object[]} The individual slices
+ */
 function divideCircle(maxAngle, entries) {
     var res = [];
     var angle = maxAngle / entries;
@@ -240,8 +248,16 @@ var SYMBOLS = [
         value: symbolPair[1]
     };
 });
+/**
+ * Gets the symbol for slice <at></at> index "index"
+ *
+ * @param {number} index - The index of the symbol
+ *
+ * @return {Object} The symbol for that position
+ */
 function getSymbol(index) {
     if (isSymbol) {
+        //Switch to the symbols instead of TEXT_CHARS
         if (index <= 9) {
             return {
                 isIcon: false,
@@ -297,13 +313,13 @@ var Symbol = (function (_super) {
         _this.state.isTextSymbol = false;
         props.isBig || props.comm.addSymbolListener(_this.props.data.angle + 90, _this, function (type, data) {
             switch (type) {
-                case 0:
+                case 0 /* intensityUpdate */:
                     if (data < 0 || data !== _this.opacity) {
                         _this.glow.style.opacity = String(data);
                         _this.opacity = data;
                     }
                     break;
-                case 2:
+                case 2 /* updateTextType */:
                     _this.setState({
                         isCapitalized: data[0],
                         isTextSymbol: data[1]
@@ -412,7 +428,7 @@ var T9Slice = (function (_super) {
         _this.children = [];
         props.comm.addSymbolListener(_this.props.data.angle + 90, _this, function (type, data) {
             switch (type) {
-                case 1:
+                case 1 /* fired */:
                     var displacedPixels_1 = data;
                     _this.children.forEach(function (slice) {
                         slice.sliceEl.style.width = "calc(45vmin + " + displacedPixels_1 + "px)";
@@ -503,38 +519,38 @@ var WatchScreen = (function (_super) {
         _this.symbols = false;
         props.comm.addMainFaceListener(function (type, data) {
             switch (type) {
-                case 1:
+                case 1 /* gesture */:
                     switch (data) {
-                        case 1:
+                        case 1 /* clear */:
                             _this.deleteChar();
                             _this._flashElement(_this.backspaceButton);
                             break;
-                        case 2:
+                        case 2 /* space */:
                             _this.addSpace();
                             _this._flashElement(_this.spacebarButton);
                             break;
-                        case 3:
+                        case 3 /* cycleT9Up */:
                             _this.cycleT9(true);
                             _this._flashElement(_this.cycleButton);
                             break;
-                        case 4:
+                        case 4 /* cycleT9Down */:
                             _this.cycleT9();
                             _this._flashElement(_this.cycleButton);
                             break;
                     }
                     break;
-                case 2:
+                case 2 /* T9KeyPressed */:
                     _this.addNum(data, false);
                     _this._resetSlices();
                     break;
-                case 4:
+                case 4 /* specificKeyPressed */:
                     _this.addNum(data, true);
                     _this._resetSlices();
                     break;
-                case 3:
+                case 3 /* resetSlices */:
                     _this._resetSlices();
                     break;
-                case 5:
+                case 5 /* watchFaceCommand */:
                     switch (data) {
                         case 'Backspace':
                             _this.deleteChar();
@@ -588,6 +604,8 @@ var WatchScreen = (function (_super) {
         };
         var lastChar = this.state.currentNums.slice(-1)[0];
         if (num === ' ' && lastChar && lastChar.type === 'char' && lastChar.data === ' ') {
+            //Last character was a space and this one is a space as well,
+            //replace last character with a dot
             this.state.currentNums[this.state.currentNums.length - 1].data = '.';
             this.state.currentText = this.state.currentText.slice(0, -1) + '.';
         }
@@ -657,7 +675,7 @@ var WatchScreen = (function (_super) {
         });
     };
     WatchScreen.prototype.sendPress = function () {
-        this.props.comm.sendMessageToController(0, this.state.currentText);
+        this.props.comm.sendMessageToController(0 /* send */, this.state.currentText);
         this.setState({
             currentText: '',
             currentNums: []
@@ -668,7 +686,7 @@ var WatchScreen = (function (_super) {
         this.upperCase = !this.upperCase;
         this.capitalizeButton.classList[this.upperCase ? 'add' : 'remove']('toggled');
         this.props.comm._symbolListeners.forEach(function (symbolListener) {
-            symbolListener.listener(2, [_this.upperCase, _this.symbols]);
+            symbolListener.listener(2 /* updateTextType */, [_this.upperCase, _this.symbols]);
         });
     };
     WatchScreen.prototype.toggleSymbols = function () {
@@ -676,7 +694,7 @@ var WatchScreen = (function (_super) {
         this.symbols = !this.symbols;
         this.symbolButton.classList[this.symbols ? 'add' : 'remove']('toggled');
         this.props.comm._symbolListeners.forEach(function (symbolListener) {
-            symbolListener.listener(2, [_this.upperCase, _this.symbols]);
+            symbolListener.listener(2 /* updateTextType */, [_this.upperCase, _this.symbols]);
         });
     };
     WatchScreen.prototype.cycleT9 = function (reverse) {
@@ -685,10 +703,12 @@ var WatchScreen = (function (_super) {
             reverse = false;
         }
         if (this.suggestions.length <= 1) {
+            //No point in cycling through a one-length array
             return;
         }
         var lastWordLength = splitNumString(this.state.currentNums).pop().arr.length;
         var lastWordStart = this.state.currentNums.length - lastWordLength;
+        //Change the cycled state of the new num strings
         this.state.currentNums.forEach(function (num, index) {
             if (index >= lastWordStart) {
                 num.cycles += (reverse ? -1 : 1);
@@ -696,7 +716,11 @@ var WatchScreen = (function (_super) {
         });
         this.setState({
             currentNums: this.state.currentNums,
+            //First slice off the last X characters, where X is equal to the 
+            //length of the last "word" using splitNumString
             currentText: this.state.currentText.slice(0, lastWordStart) +
+                //Then append the next or previous suggestion modulo the length
+                //to prevent overflows
                 this.suggestions[(this.suggestions.indexOf(this.state.currentText.slice(lastWordStart)) +
                     this.suggestions.length +
                     (reverse ? -1 : 1)) % this.suggestions.length]
@@ -1057,7 +1081,7 @@ if (DEBUG) {
         pointer.y = e.clientY;
     };
 }
-var websocket = new WebSocket('ws://localhost:1234', 'echo-protocol');
+var websocket = new WebSocket("ws://" + location.host, 'echo-protocol');
 var pointerIcon = document.getElementById('pointerSpotted');
 function getPointerRadius(vector, directionAngle) {
     //Max from the center is bending your finger about 30 degrees,
@@ -1075,38 +1099,47 @@ function handleGestures(data) {
     }
     comm.fireMainFaceListener(1 /* gesture */, data.gesture);
 }
-websocket.onmessage = function (event) {
-    var stringifiedData = event.data;
-    var data = JSON.parse(stringifiedData);
-    var spottedGesture = handleGestures(data);
-    if (data.foundPointer) {
-        //Get the amount of degrees that the finger is moving to the outside
-        var pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
-        var radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
-        var radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
-        pointer.x = HALF_WINDOW_WIDTH +
-            (Math.cos(pointer2DDirection) * radiusPx);
-        pointer.y = HALF_WINDOW_HEIGHT +
-            (Math.sin(pointer2DDirection) * radiusPx);
-        pointerIcon.classList.remove('noPointer');
-    }
-    else if (!spottedGesture) {
-        pointerIcon.classList.add('noPointer');
-    }
-};
-function finishLoading() {
+Promise.all([
+    new Promise(function (resolve) {
+        websocket.onopen = function (event) {
+            resolve();
+        };
+        websocket.onmessage = function (event) {
+            var stringifiedData = event.data;
+            var data = JSON.parse(stringifiedData);
+            var spottedGesture = handleGestures(data);
+            if (data.foundPointer) {
+                //Get the amount of degrees that the finger is moving to the outside
+                var pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
+                var radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
+                var radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
+                pointer.x = HALF_WINDOW_WIDTH +
+                    (Math.cos(pointer2DDirection) * radiusPx);
+                pointer.y = HALF_WINDOW_HEIGHT +
+                    (Math.sin(pointer2DDirection) * radiusPx);
+                pointerIcon.classList.remove('noPointer');
+            }
+            else if (!spottedGesture) {
+                pointerIcon.classList.add('noPointer');
+            }
+        };
+    }),
+    new Promise(function (resolve) {
+        util.fetch("/resources/" + LANG + ".txt").then(function (res) {
+            return res.text();
+        }).then(function (text) {
+            t9.init(text);
+            resolve();
+        });
+    })
+]).then(function () {
+    //Finish loading
     document.getElementById('spinnerOverlay').style.opacity = '0';
     window.setTimeout(function () {
         document.getElementById('spinnerOverlay').style.display = 'none';
         isLoading = false;
         window.requestAnimationFrame(updatePointerPos);
     }, 500);
-}
-util.fetch("/resources/" + LANG + ".txt").then(function (res) {
-    return res.text();
-}).then(function (text) {
-    t9.init(text);
-    finishLoading();
 });
 var currentTutorialSlide = 0;
 var exitEl = document.querySelector('#closeTutorialButton');

@@ -1,6 +1,7 @@
 interface LeapNoPointer {
 	foundPointer: false;
 	gesture?: Gesture;
+	handshake: false;
 }
 
 interface LeapPointerData {
@@ -8,6 +9,7 @@ interface LeapPointerData {
 	stabilizedTipPosition: VectorArr;
 	gesture?: Gesture;
 	foundPointer: true;
+	handshake: false;
 }
 
 type WSData = LeapNoPointer|LeapPointerData;

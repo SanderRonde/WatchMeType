@@ -216,7 +216,7 @@ if (DEBUG) {
         pointer.y = e.clientY;
     };
 }
-var websocket = new WebSocket('ws://localhost:1234', 'echo-protocol');
+var websocket = new WebSocket("ws://" + location.host, 'echo-protocol');
 var pointerIcon = document.getElementById('pointerSpotted');
 function getPointerRadius(vector, directionAngle) {
     //Max from the center is bending your finger about 30 degrees,
@@ -234,38 +234,47 @@ function handleGestures(data) {
     }
     comm.fireMainFaceListener(1 /* gesture */, data.gesture);
 }
-websocket.onmessage = function (event) {
-    var stringifiedData = event.data;
-    var data = JSON.parse(stringifiedData);
-    var spottedGesture = handleGestures(data);
-    if (data.foundPointer) {
-        //Get the amount of degrees that the finger is moving to the outside
-        var pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
-        var radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
-        var radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
-        pointer.x = HALF_WINDOW_WIDTH +
-            (Math.cos(pointer2DDirection) * radiusPx);
-        pointer.y = HALF_WINDOW_HEIGHT +
-            (Math.sin(pointer2DDirection) * radiusPx);
-        pointerIcon.classList.remove('noPointer');
-    }
-    else if (!spottedGesture) {
-        pointerIcon.classList.add('noPointer');
-    }
-};
-function finishLoading() {
+Promise.all([
+    new Promise(function (resolve) {
+        websocket.onopen = function (event) {
+            resolve();
+        };
+        websocket.onmessage = function (event) {
+            var stringifiedData = event.data;
+            var data = JSON.parse(stringifiedData);
+            var spottedGesture = handleGestures(data);
+            if (data.foundPointer) {
+                //Get the amount of degrees that the finger is moving to the outside
+                var pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
+                var radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
+                var radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
+                pointer.x = HALF_WINDOW_WIDTH +
+                    (Math.cos(pointer2DDirection) * radiusPx);
+                pointer.y = HALF_WINDOW_HEIGHT +
+                    (Math.sin(pointer2DDirection) * radiusPx);
+                pointerIcon.classList.remove('noPointer');
+            }
+            else if (!spottedGesture) {
+                pointerIcon.classList.add('noPointer');
+            }
+        };
+    }),
+    new Promise(function (resolve) {
+        util.fetch("/resources/" + LANG + ".txt").then(function (res) {
+            return res.text();
+        }).then(function (text) {
+            t9.init(text);
+            resolve();
+        });
+    })
+]).then(function () {
+    //Finish loading
     document.getElementById('spinnerOverlay').style.opacity = '0';
     window.setTimeout(function () {
         document.getElementById('spinnerOverlay').style.display = 'none';
         isLoading = false;
         window.requestAnimationFrame(updatePointerPos);
     }, 500);
-}
-util.fetch("/resources/" + LANG + ".txt").then(function (res) {
-    return res.text();
-}).then(function (text) {
-    t9.init(text);
-    finishLoading();
 });
 var currentTutorialSlide = 0;
 var exitEl = document.querySelector('#closeTutorialButton');

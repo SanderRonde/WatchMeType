@@ -1,3 +1,5 @@
+/// <reference path="../typings/index.d.ts" />
+/// <reference path="./libs/leapmotion.d.ts" />
 "use strict";
 var http = require("http");
 var path = require("path");
@@ -59,7 +61,9 @@ new Promise(function (resolve) {
         if (wsServer.connections.length === 0) {
             return;
         }
-        var message = {};
+        var message = {
+            handshake: false
+        };
         message.gesture = gestureRecognition_1.default(frame);
         if (frame.pointables.length === 0 ||
             frame.pointables.filter(function (pointable) {
@@ -74,15 +78,16 @@ new Promise(function (resolve) {
             if (lastPointable && frame.pointable(lastPointable) &&
                 frame.pointable(lastPointable).valid &&
                 frame.finger(lastPointable).extended) {
+                //Follow the same finger as before
                 pointable = frame.pointable(lastPointable);
             }
             else {
                 pointable = getFinger(frame, [
-                    1,
-                    2,
-                    3,
-                    4,
-                    0
+                    1 /* index */,
+                    2 /* middle */,
+                    3 /* ring */,
+                    4 /* pinky */,
+                    0 /* thumb */
                 ]);
                 if (pointable) {
                     lastPointable = pointable.id;
@@ -96,8 +101,9 @@ new Promise(function (resolve) {
             message.direction = pointable.direction;
             message.stabilizedTipPosition = pointable.stablizedTipPosition;
         }
-        if (!message.foundPointer && message.gesture === 0) {
+        if (!message.foundPointer && message.gesture === 0 /* none */) {
             if (!hasNoEvents) {
+                //Send a message notifying that activity has stopped
                 wsServer.broadcastUTF(JSON.stringify(message));
                 hasNoEvents = true;
             }
