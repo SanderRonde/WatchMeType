@@ -1,3 +1,5 @@
+/// <reference path="../../typings/index.d.ts" />
+/// <reference path="./defs.d.ts" />
 "use strict";
 var React = require("react");
 var ReactDOM = require("react-dom");
@@ -83,22 +85,25 @@ var comm = {
         gestureAngle = (gestureAngle + 90) % 360;
         var radius = radiusFromCenter(pos);
         if (selectingT9LetterAngle !== -1) {
+            //Cancel if needed
             if (!waitForReset && radius >= SYMBOL_RADIUS &&
                 Math.abs(gestureAngle - selectingT9LetterAngle) <=
                     CANCEL_SPECIFIC_SYMBOL_MODE_ANGLE) {
+                //Cancel this mode
                 chooseSymbolOverlay.hide();
                 selectingT9LetterAngle = -1;
                 waitForReset = true;
                 return;
             }
             else {
+                //Check if the buttons are being hovered over
                 chooseSymbolOverlay.slices.forEach(function (slice) {
                     if (!slice || !slice.child) {
                         return;
                     }
                     if (isHoveringOver(slice.child.area, pos)) {
                         slice.child.symbolCont.classList.add('toggled');
-                        comm.fireMainFaceListener(4, slice.child.symbol.symbol);
+                        comm.fireMainFaceListener(4 /* specificKeyPressed */, slice.child.symbol.symbol);
                         chooseSymbolOverlay.hide();
                         selectingT9LetterAngle = -1;
                         waitForReset = true;
@@ -118,6 +123,7 @@ var comm = {
             var maxGlowIntensity = getGlowIntensity(SYMBOL_RADIUS, radius);
             gestureAngle = (gestureAngle + (360 / 26)) % 360;
             if (maxGlowIntensity >= KEY_PRESSED_MIN_DISTANCE * 0.8) {
+                //Some area was toggled, find out which one
                 var toggledIndex = comm._symbolListeners.length - 1;
                 var lastSlice = 0;
                 var broke = false;
@@ -136,25 +142,26 @@ var comm = {
                 }
                 var displacedPixels = radius - SYMBOL_RADIUS;
                 if (displacedPixels > CHOOSE_SYMBOL_ACTIVATION * VMIN) {
+                    //Enter choose-symbol mode
                     enterChooseSymbolMode(comm._symbolListeners[toggledIndex].element
                         .children.map(function (slice) {
                         return slice.child.symbol.symbol;
                     }), comm._symbolListeners[toggledIndex].angle);
-                    comm._symbolListeners[toggledIndex].listener(1, 0);
+                    comm._symbolListeners[toggledIndex].listener(1 /* fired */, 0);
                     comm._faceListeners.forEach(function (faceListener) {
-                        faceListener(3);
+                        faceListener(3 /* resetSlices */);
                     });
                     pressingKey = -1;
                 }
                 else {
-                    comm._symbolListeners[toggledIndex].listener(1, displacedPixels);
+                    comm._symbolListeners[toggledIndex].listener(1 /* fired */, displacedPixels);
                     pressingKey = comm._symbolListeners[toggledIndex].element
                         .props.data.index + 1;
                 }
             }
         }
         else if (pressingKey !== -1) {
-            comm.fireMainFaceListener(2, pressingKey);
+            comm.fireMainFaceListener(2 /* T9KeyPressed */, pressingKey);
             pressingKey = -1;
         }
     },
@@ -169,7 +176,7 @@ var comm = {
     },
     sendMessageToController: function (type, data) {
         switch (type) {
-            case 0:
+            case 0 /* send */:
                 alert("Sent message \"" + data + "\"");
                 break;
         }
@@ -180,7 +187,7 @@ document.body.addEventListener('keydown', function (e) {
         goToNextTutorialSlide();
     }
     else {
-        comm.fireMainFaceListener(5, e.key);
+        comm.fireMainFaceListener(5 /* watchFaceCommand */, e.key);
     }
 });
 var chooseSymbolOverlay = ReactDOM.render(React.createElement(components.ChooseSymbol, {
@@ -212,6 +219,7 @@ if (DEBUG) {
 var websocket = new WebSocket('ws://localhost:1234', 'echo-protocol');
 var pointerIcon = document.getElementById('pointerSpotted');
 function getPointerRadius(vector, directionAngle) {
+    //Max from the center is bending your finger about 30 degrees,
     var currentRatio = Math.abs(vector[2]) /
         (Math.abs(vector[0]) + Math.abs(vector[1]));
     return Math.min((1 / currentRatio) * FINGER_ADJUSTMENT, 1);
@@ -221,16 +229,17 @@ function getPointer2DDirection(vector) {
     return angle;
 }
 function handleGestures(data) {
-    if (data.gesture === 0) {
+    if (data.gesture === 0 /* none */) {
         return false;
     }
-    comm.fireMainFaceListener(1, data.gesture);
+    comm.fireMainFaceListener(1 /* gesture */, data.gesture);
 }
 websocket.onmessage = function (event) {
     var stringifiedData = event.data;
     var data = JSON.parse(stringifiedData);
     var spottedGesture = handleGestures(data);
     if (data.foundPointer) {
+        //Get the amount of degrees that the finger is moving to the outside
         var pointer2DDirection = -getPointer2DDirection(data.direction) * (Math.PI / 180);
         var radiusPercentage = getPointerRadius(data.direction, pointer2DDirection);
         var radiusPx = radiusPercentage * MAX_FINGER_RADIUS;
@@ -281,5 +290,6 @@ var dots = Array.prototype.slice.call(document.querySelectorAll('.tutorialButton
 });
 exitEl.addEventListener('click', function () {
     document.querySelector('#tutorial').classList.add('hidden');
+    tutorialVisible = false;
 });
 //# sourceMappingURL=index.js.map

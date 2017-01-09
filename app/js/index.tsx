@@ -335,4 +335,5 @@ const dots: [
 
 exitEl.addEventListener('click', () => {
 	document.querySelector('#tutorial').classList.add('hidden');
+	tutorialVisible = false;
 });
