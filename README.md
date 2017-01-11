@@ -2,7 +2,7 @@
 
 ## Running
 
-To get started, clone, (install NPM), run "npm install" and run "node run" to launch the server.
+To get started, clone, (install NPM), run ```npm install``` and run ```node run``` to launch the server.
 Then navigate to http://localhost:1234/
 
 Use the URL to enter any parameters like this http://localhost:1234/#{parameters}
