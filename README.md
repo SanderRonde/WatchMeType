@@ -1,9 +1,12 @@
 # WatchMeType
 
-## Running
+## Installation
 
-To get started, clone, (install NPM), run ```npm install``` and run ```node run``` to launch the server.
-Then navigate to http://localhost:1234/
+First of all make sure you have a [Leap Motion](https://www.leapmotion.com/) plugged in and you have installed its associated software.
+
+To get started, clone, (install NPM) and run ```npm install```.
+
+To run the server, run ```node run``` and navigate to http://localhost:1234/
 
 Use the URL to enter any parameters like this http://localhost:1234/#{parameters}
 The parameters should be seperated by dashes and can be in any order. For example:
