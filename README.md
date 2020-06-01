@@ -1,5 +1,7 @@
 # WatchMeType
 
+A web app that allows you to type using nothing but your finger and a leap motion. Created as a demo for what the leap motion could do for typing on a smartwatch.
+
 ## Installation
 
 First of all make sure you have a [Leap Motion](https://www.leapmotion.com/) plugged in and you have installed its associated software.
