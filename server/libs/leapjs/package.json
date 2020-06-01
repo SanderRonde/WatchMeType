@@ -45,7 +45,7 @@
   "dependencies": {
     "gl-matrix": "2.2.1",
     "underscore": "1.4.4",
-    "ws": "0.4.25"
+    "ws": "7.3.0"
   },
   "description": "JavaScript client for the Leap Motion Controller",
   "devDependencies": {
